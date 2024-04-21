@@ -11,10 +11,10 @@ FLASK_RUN_HOST=0.0.0.0
 FLASK_RUN_PORT=8080
 SECRET_KEY='$SECRET'
 DB_NAME=amazon
-DB_USER=${PGUSER}
-DB_PORT=${PGPORT}
-DB_HOST=${PGHOST}
-DB_PASSWORD=${PGPASSWORD}" > .flaskenv
+DB_USER=qx49
+DB_PORT=5432
+DB_HOST=localhost
+DB_PASSWORD=123456" > .flaskenv
 
 poetry config virtualenvs.in-project true
 poetry install

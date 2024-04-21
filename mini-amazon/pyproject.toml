@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "mini-amazon"
 version = "1.2023.0"
-authors = ["CompSci 316 Teaching Staff <compsci-316@duke.edu>"]
+authors = ["qianyi.xue@duke.edu"]
 description = "Mini Amazon Course Project"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.8"
 flask = "2.3.3"
 werkzeug = "2.3.7"
 flask-sqlalchemy = "^3.0.5"
