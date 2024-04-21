@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "mini-amazon"
 version = "1.2023.0"
-authors = ["qianyi.xue@duke.edu"]
+authors = ["John Smith <john@example.com>"]
 description = "Mini Amazon Course Project"
 
 [tool.poetry.dependencies]

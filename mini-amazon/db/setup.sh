@@ -7,12 +7,12 @@ cd $mybase
 source ../.flaskenv
 dbname=$DB_NAME
 
-if [[ -n `psql -lqt | cut -d \| -f 1 | grep -w "$dbname"` ]]; then
-    dropdb $dbname
+if [[ -n `psql -U postgres -lqt | cut -d \| -f 1 | grep -w "$dbname"` ]]; then
+    dropdb -U postgres "$dbname"
 fi
-createdb $dbname
+createdb -U postgres "$dbname"
 
-psql -af create.sql $dbname
+psql -U postgres -af create.sql "$dbname"
 
 # python3 gen.py
 # psql -af load.sql $dbname

@@ -40,16 +40,8 @@ CREATE TABLE warehouse
     w_y  int default 0
 );
 
+CREATE TYPE fulfilmentStatus AS ENUM ('processing','packing','packed','loading','loaded','delivering', 'delivered');
 
-CREATE TABLE inventories
-(
-    inv_invid serial primary key,
-    inv_wid integer not null,
-    inv_pid integer not null,
-    foreign key (inv_wid) references warehouse (w_wid),
-    foreign key (inv_pid) references products (p_pid),
-    inv_qty int default 0                not null  
-);
 
 CREATE TABLE orders
 (
@@ -74,9 +66,6 @@ CREATE TABLE orders
 );
 
 
-
-
-CREATE TYPE fulfilmentStatus AS ENUM ('processing','packing','packed','loading','loaded','delivering', 'delivered');
 
 -- TODO
 CREATE TYPE productCategory AS ENUM (
@@ -117,6 +106,16 @@ create table products
     p_description     text        null,
     p_image           text        null,
     p_price     decimal(12, 2) check (p_price >= 0)   not null
+);
+
+CREATE TABLE inventories
+(
+    inv_invid serial primary key,
+    inv_wid integer not null,
+    inv_pid integer not null,
+    foreign key (inv_wid) references warehouse (w_wid),
+    foreign key (inv_pid) references products (p_pid),
+    inv_qty int default 0                not null  
 );
 
 create table lineItems
