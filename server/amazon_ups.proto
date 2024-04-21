@@ -6,36 +6,37 @@ message init_world{
 
 // Amazon -> UPS
 
-message request_truck{
-    optional int64 package_id = 1;
-    required int64 warehouse_id = 2;
-    required string ups_user = 3;
-    required int64 seqnum = 4;
-    required int64 warehouse_x = 5;
-    required int64 warehouse_y = 6;
+message Item{
+	required string name = 1;
+	required int64 quantity = 2;
 }
+
+message request_truck{
+	required int64 package_id = 1;
+	required int64 warehouse_id = 2;
+    optional string ups_user  = 3;  
+    required int64 warehouse_x = 4;
+    required int64 warehouse_y = 5;
+    required int64 dest_x = 6;
+	required int64 dest_y = 7;
+    repeated Item items = 8;
+} 
 
 message load_package{
-    required int64 package_id = 1;
-    required int64 dest_x = 2;
-    required int64 dest_y = 3;
-    required int64 truck_id = 4;
-}
-
-message request_destination_change {
-    required int64 package_id = 1;
-    required int64 new_dest_x = 2;
-    required int64 new_dest_y = 3;
+	required int64 package_id = 1;
+	required int64 dest_x = 2;
+	required int64 dest_y = 3;
+	required int64 truck_id = 4;
 }
 
 message AUCommands {
-    optional request_truck truck_req = 1;
-    optional load_package load_pack = 2;
-    optional request_destination_change dest_ch = 3;
-    optional bool disconnect = 4;
-    optional int64 world_id = 5;
+	optional bool connected = 1;
+	optional request_truck truck_req = 2;
+	optional load_package load_pack = 3;
+	optional bool disconnect = 4;
 }
 
+	
 // UPS -> Amazon
 
 message response_truck_arrive {
@@ -43,25 +44,24 @@ message response_truck_arrive {
     required int64 warehouse_x = 2;
     required int64 warehouse_y = 3;
     required int64 warehouse_id =4;
+    required int64 package_id = 5;
 }
 
-message response_deliver_package {
+message start_deliver{
+	repeated int64 package_id = 1;
+}
+
+message delivered_package {
     required int64 truck_id = 1;
     required int64 package_id = 2;
     required int64 dest_x = 3;
     required int64 dest_y = 4;
-}
-
-message response_destination_changed {
-    required int64 package_id = 1;
-    required int64 new_dest_x = 2;
-    required int64 new_dest_y = 3;
-    required bool success = 4;
-}
+} 
 
 message UACommands {
-    optional response_truck_arrive truck_arrive = 1;
-    optional response_deliver_package package_deliver = 2;
-    optional response_destination_changed destination_change = 3;
-    optional bool disconnect = 4;
+    optional int64 world_id = 1;
+	optional response_truck_arrive  truck_arrive = 2;
+	optional start_deliver start_deliver = 3;
+	optional delivered_package package_delivered = 4;
+	optional bool disconnect = 5;
 }

@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61mazon_ups.proto\"\x1e\n\ninit_world\x12\x10\n\x08world_id\x18\x01 \x02(\x03\"\x85\x01\n\rrequest_truck\x12\x12\n\npackage_id\x18\x01 \x01(\x03\x12\x14\n\x0cwarehouse_id\x18\x02 \x02(\x03\x12\x10\n\x08ups_user\x18\x03 \x02(\t\x12\x0e\n\x06seqnum\x18\x04 \x02(\x03\x12\x13\n\x0bwarehouse_x\x18\x05 \x02(\x03\x12\x13\n\x0bwarehouse_y\x18\x06 \x02(\x03\"T\n\x0cload_package\x12\x12\n\npackage_id\x18\x01 \x02(\x03\x12\x0e\n\x06\x64\x65st_x\x18\x02 \x02(\x03\x12\x0e\n\x06\x64\x65st_y\x18\x03 \x02(\x03\x12\x10\n\x08truck_id\x18\x04 \x02(\x03\"X\n\x1arequest_destination_change\x12\x12\n\npackage_id\x18\x01 \x02(\x03\x12\x12\n\nnew_dest_x\x18\x02 \x02(\x03\x12\x12\n\nnew_dest_y\x18\x03 \x02(\x03\"\xa5\x01\n\nAUCommands\x12!\n\ttruck_req\x18\x01 \x01(\x0b\x32\x0e.request_truck\x12 \n\tload_pack\x18\x02 \x01(\x0b\x32\r.load_package\x12,\n\x07\x64\x65st_ch\x18\x03 \x01(\x0b\x32\x1b.request_destination_change\x12\x12\n\ndisconnect\x18\x04 \x01(\x08\x12\x10\n\x08world_id\x18\x05 \x01(\x03\"i\n\x15response_truck_arrive\x12\x10\n\x08truck_id\x18\x01 \x02(\x03\x12\x13\n\x0bwarehouse_x\x18\x02 \x02(\x03\x12\x13\n\x0bwarehouse_y\x18\x03 \x02(\x03\x12\x14\n\x0cwarehouse_id\x18\x04 \x02(\x03\"`\n\x18response_deliver_package\x12\x10\n\x08truck_id\x18\x01 \x02(\x03\x12\x12\n\npackage_id\x18\x02 \x02(\x03\x12\x0e\n\x06\x64\x65st_x\x18\x03 \x02(\x03\x12\x0e\n\x06\x64\x65st_y\x18\x04 \x02(\x03\"k\n\x1cresponse_destination_changed\x12\x12\n\npackage_id\x18\x01 \x02(\x03\x12\x12\n\nnew_dest_x\x18\x02 \x02(\x03\x12\x12\n\nnew_dest_y\x18\x03 \x02(\x03\x12\x0f\n\x07success\x18\x04 \x02(\x08\"\xbd\x01\n\nUACommands\x12,\n\x0ctruck_arrive\x18\x01 \x01(\x0b\x32\x16.response_truck_arrive\x12\x32\n\x0fpackage_deliver\x18\x02 \x01(\x0b\x32\x19.response_deliver_package\x12\x39\n\x12\x64\x65stination_change\x18\x03 \x01(\x0b\x32\x1d.response_destination_changed\x12\x12\n\ndisconnect\x18\x04 \x01(\x08')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61mazon_ups.proto\"\x1e\n\ninit_world\x12\x10\n\x08world_id\x18\x01 \x02(\x03\"&\n\x04Item\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x10\n\x08quantity\x18\x02 \x02(\x03\"\xab\x01\n\rrequest_truck\x12\x12\n\npackage_id\x18\x01 \x02(\x03\x12\x14\n\x0cwarehouse_id\x18\x02 \x02(\x03\x12\x10\n\x08ups_user\x18\x03 \x01(\t\x12\x13\n\x0bwarehouse_x\x18\x04 \x02(\x03\x12\x13\n\x0bwarehouse_y\x18\x05 \x02(\x03\x12\x0e\n\x06\x64\x65st_x\x18\x06 \x02(\x03\x12\x0e\n\x06\x64\x65st_y\x18\x07 \x02(\x03\x12\x14\n\x05items\x18\x08 \x03(\x0b\x32\x05.Item\"T\n\x0cload_package\x12\x12\n\npackage_id\x18\x01 \x02(\x03\x12\x0e\n\x06\x64\x65st_x\x18\x02 \x02(\x03\x12\x0e\n\x06\x64\x65st_y\x18\x03 \x02(\x03\x12\x10\n\x08truck_id\x18\x04 \x02(\x03\"x\n\nAUCommands\x12\x11\n\tconnected\x18\x01 \x01(\x08\x12!\n\ttruck_req\x18\x02 \x01(\x0b\x32\x0e.request_truck\x12 \n\tload_pack\x18\x03 \x01(\x0b\x32\r.load_package\x12\x12\n\ndisconnect\x18\x04 \x01(\x08\"}\n\x15response_truck_arrive\x12\x10\n\x08truck_id\x18\x01 \x02(\x03\x12\x13\n\x0bwarehouse_x\x18\x02 \x02(\x03\x12\x13\n\x0bwarehouse_y\x18\x03 \x02(\x03\x12\x14\n\x0cwarehouse_id\x18\x04 \x02(\x03\x12\x12\n\npackage_id\x18\x05 \x02(\x03\"#\n\rstart_deliver\x12\x12\n\npackage_id\x18\x01 \x03(\x03\"Y\n\x11\x64\x65livered_package\x12\x10\n\x08truck_id\x18\x01 \x02(\x03\x12\x12\n\npackage_id\x18\x02 \x02(\x03\x12\x0e\n\x06\x64\x65st_x\x18\x03 \x02(\x03\x12\x0e\n\x06\x64\x65st_y\x18\x04 \x02(\x03\"\xb6\x01\n\nUACommands\x12\x10\n\x08world_id\x18\x01 \x01(\x03\x12,\n\x0ctruck_arrive\x18\x02 \x01(\x0b\x32\x16.response_truck_arrive\x12%\n\rstart_deliver\x18\x03 \x01(\x0b\x32\x0e.start_deliver\x12-\n\x11package_delivered\x18\x04 \x01(\x0b\x32\x12.delivered_package\x12\x12\n\ndisconnect\x18\x05 \x01(\x08')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -23,20 +23,20 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_INIT_WORLD']._serialized_start=20
   _globals['_INIT_WORLD']._serialized_end=50
-  _globals['_REQUEST_TRUCK']._serialized_start=53
-  _globals['_REQUEST_TRUCK']._serialized_end=186
-  _globals['_LOAD_PACKAGE']._serialized_start=188
-  _globals['_LOAD_PACKAGE']._serialized_end=272
-  _globals['_REQUEST_DESTINATION_CHANGE']._serialized_start=274
-  _globals['_REQUEST_DESTINATION_CHANGE']._serialized_end=362
-  _globals['_AUCOMMANDS']._serialized_start=365
-  _globals['_AUCOMMANDS']._serialized_end=530
-  _globals['_RESPONSE_TRUCK_ARRIVE']._serialized_start=532
-  _globals['_RESPONSE_TRUCK_ARRIVE']._serialized_end=637
-  _globals['_RESPONSE_DELIVER_PACKAGE']._serialized_start=639
-  _globals['_RESPONSE_DELIVER_PACKAGE']._serialized_end=735
-  _globals['_RESPONSE_DESTINATION_CHANGED']._serialized_start=737
-  _globals['_RESPONSE_DESTINATION_CHANGED']._serialized_end=844
-  _globals['_UACOMMANDS']._serialized_start=847
-  _globals['_UACOMMANDS']._serialized_end=1036
+  _globals['_ITEM']._serialized_start=52
+  _globals['_ITEM']._serialized_end=90
+  _globals['_REQUEST_TRUCK']._serialized_start=93
+  _globals['_REQUEST_TRUCK']._serialized_end=264
+  _globals['_LOAD_PACKAGE']._serialized_start=266
+  _globals['_LOAD_PACKAGE']._serialized_end=350
+  _globals['_AUCOMMANDS']._serialized_start=352
+  _globals['_AUCOMMANDS']._serialized_end=472
+  _globals['_RESPONSE_TRUCK_ARRIVE']._serialized_start=474
+  _globals['_RESPONSE_TRUCK_ARRIVE']._serialized_end=599
+  _globals['_START_DELIVER']._serialized_start=601
+  _globals['_START_DELIVER']._serialized_end=636
+  _globals['_DELIVERED_PACKAGE']._serialized_start=638
+  _globals['_DELIVERED_PACKAGE']._serialized_end=727
+  _globals['_UACOMMANDS']._serialized_start=730
+  _globals['_UACOMMANDS']._serialized_end=912
 # @@protoc_insertion_point(module_scope)
