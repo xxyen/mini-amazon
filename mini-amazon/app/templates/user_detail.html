@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if user %}
+<style>
+    .stretch-card>.card {
+        width: 100%;
+        min-width: 100%
+    }
+
+    body {
+        background-color: #f9f9fa
+    }
+
+    .flex {
+        -webkit-box-flex: 1;
+        -ms-flex: 1 1 auto;
+        flex: 1 1 auto
+    }
+
+    @media (max-width:991.98px) {
+        .padding {
+            padding: 1.5rem
+        }
+    }
+
+    @media (max-width:767.98px) {
+        .padding {
+            padding: 1rem
+        }
+    }
+
+    .padding {
+        padding: 2rem !important
+    }
+
+    .center-flex {
+        display: flex;
+        justify-content: center;
+    }
+
+    .card-sub {
+        border: none;
+        -webkit-box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.05), 0 -2px 1px -2px rgba(0, 0, 0, 0.04), 0 0 0 -1px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.05), 0 -2px 1px -2px rgba(0, 0, 0, 0.04), 0 0 0 -1px rgba(0, 0, 0, 0.05)
+    }
+
+    .card-img-top {
+        width: 100%;
+        border-top-left-radius: calc(.25rem - 1px);
+        border-top-right-radius: calc(.25rem - 1px)
+    }
+
+    .card-block {
+        padding: 1.25rem;
+        background-color: #fff !important
+    }
+
+
+    .sortable-moves {
+        margin-bottom: 0;
+        -webkit-box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.14);
+        box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.14);
+        margin-bottom: 20px;
+        padding: 15px 0 15px 60px;
+    }
+
+    .sortable-moves {
+        line-height: 1.55556em;
+        list-style-type: none;
+        margin-bottom: 15px;
+        min-height: 3.55556em;
+        padding-left: 7.11111em;
+        position: relative;
+        background-color: #fff;
+    }
+
+    .sortable-moves img {
+        position: absolute;
+        height: 80px;
+        width: 80px;
+        left: 10px;
+        border-radius: 5px;
+        top: 15px;
+    }
+
+    .orders-header h1 {
+        font-size: 30px;
+        font-weight: bold;
+        color: black;
+        margin-left: 20px;
+    }
+
+    .orders-header hr {
+        border: none;
+        height: 1px;
+        background-color: #d3d3d3;
+        /* Grey color for the horizontal line */
+        margin-top: 5px;
+        margin-bottom: 0;
+        /* Adjust as needed to add space below the line */
+    }
+
+    .title-padding {
+        padding-top: 30px;
+        margin-bottom: -20px;
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+
+    .title-padding-2 {
+        padding-top: -20px;
+        margin-bottom: -20px;
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+
+    .text-product {
+        font-size: 10px;
+    }
+
+    .category-info {
+        color: #888;
+    }
+
+
+    a.no-decoration {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        outline: none;
+    }
+
+
+    a.no-decoration:focus .sortable-moves,
+    a.no-decoration:active .sortable-moves {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        transition: box-shadow 0.3s;
+    }
+</style>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<div class="title-padding orders-header">
+    <h1>Your Orders</h1>
+    <hr>
+</div>
+<div class="page-content page-container" id="page-content">
+    <div class="padding">
+        <div class="row container d-flex justify-content-center">
+            <div class="col-lg-12 col-xl-6">
+                <!-- Draggable Multiple List card start -->
+                <div class="card-block p-b-0">
+                    <div class="row">
+                        <div class="col-md-12" id="sortable">
+                            {% if orders %}
+
+                            {% for order in orders %}
+                            {% if loop.index <= 5 %} <a
+                                href="{{ url_for('orders.getUserOrders',user_id=current_user.id) }}"
+                                class="no-decoration" style="text-decoration: none; color: inherit;">
+                                <div class="sortable-moves" style="">
+                                    <img class="text-product img-fluid p-absolute image-dim"
+                                        src="{{ order.img if order.img else 'https://m.media-amazon.com/images/I/81yGvW62D2L._AC_SY240_.jpg' }}"
+                                        alt="Product Image">
+                                    <h3>{{ order.product_name }}</h3>
+                                    <p>
+                                        <strong>
+                                            {% if order.status == 'processing' %}
+                                            Status: Processing - Your order has been processing since {{
+                                            order.processingDate }}.
+                                            {% elif order.status == 'packing' %}
+                                            Status: Packing - Your order has been in packing since {{ order.packingDate
+                                            }}.
+                                            {% elif order.status == 'packed' %}
+                                            Status: Packed - Your order was packed on {{ order.packedDate }}.
+                                            {% elif order.status == 'loading' %}
+                                            Status: Loading - Your order has been loading since {{ order.loadingDate }}.
+                                            {% elif order.status == 'loaded' %}
+                                            Status: Loaded - Your order was loaded on {{ order.loadedDate }}.
+                                            {% elif order.status == 'delivering' %}
+                                            Status: Delivering - Your order has been in transit since {{
+                                            order.deliveringDate }}.
+                                            {% elif order.status == 'delivered' %}
+                                            Status: Delivered - Your order was delivered on {{ order.deliveredDate }}.
+                                            {% else %}
+                                            Status: Unknown - Please contact support.
+                                            {% endif %}
+
+                                        </strong>
+                                    </p>
+                                    <p class="category-info">Category: {{ order.category }}, Amount: {{ order.amount }},
+                                        Number: {{ order.number }}</p>
+                                    <p>{{ order.description}}</p>
+                                </div>
+                                </a>
+                                {% endif %}
+                                {% endfor %}
+                                {% if orders|length > 5 %}
+                                <a class="center-flex"
+                                    href="{{ url_for('orders.getUserOrders',user_id=current_user.id) }}">View
+                                    All
+                                    Orders</a>
+                                {% endif %}
+                                {% else %}
+                                <div class="col">
+                                    <p class="text-center">No orders found</p>
+                                </div>
+                                {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="title-padding-2 orders-header">
+    <h1>Your Profile</h1>
+    <hr>
+</div>
+<div class="bootstrap-iso">
+    <br> <!--empty space-->
+    <div class="container">
+        <div class="row align-items-center my-5">
+            <div class="col-auto">
+                <img src="../static/default_avatar.png" alt="User Avatar" class="rounded-circle"
+                    style="width: 100px; height: 100px;">
+            </div>
+
+            <div class="col">
+                <h2>{{ user.firstname }} {{ user.lastname }}</h2>
+                <p class="text-muted">is {% if not user.isSeller %}not{% endif %} a seller</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container my-4 border text-dark">
+
+        <h2 class="text-dark text-center my-1 py-3">Recent Feedbacks</h2>
+        <br> <!--empty space-->
+        <div class="row">
+            {% if feedbacks %}
+
+            {% for feedback in feedbacks %}
+            <div class="col-md-4">
+                <div class="card mb-4" style="height: 300px;">
+                    <div class="card-body d-flex flex-column">
+                        <div class="mb-3" style="overflow-y: auto; max-height: 200px;">
+                            <p class="card-text">
+                                Date: {{ feedback.date }}<br>
+                                Product: {{ feedback.productName }}<br>
+                                Seller: Amazon<br>
+                                Score:
+                                <span class="stars">
+                                    {% set score = feedback.score | float %}
+                                    {% set fullStars = score | int %}
+                                    {% set hasHalfStar = score % 1 >= 0.5 %}
+                                    {% for i in range(fullStars) %}
+                                    <i class="fas fa-star text-warning"></i>
+                                    {% endfor %}
+                                    {% if hasHalfStar %}
+                                    <i class="fas fa-star-half-alt text-warning"></i>
+                                    {% endif %}
+                                    {% for i in range(fullStars + hasHalfStar, 5) %}
+                                    <i class="far fa-star text-warning"></i>
+                                    {% endfor %}
+                                </span>
+                                ({{ feedback.score }})<br>
+
+                                Content:
+                            </p>
+                            <div class="card p-2">
+                                <p class="card-text">{{ feedback.content }}</p>
+                                {% if feedback.image %}
+                                <img src="{{ feedback.image }}" alt="Feedback Image"
+                                    class="card-img-top mx-auto d-block" style="width: 60%; height: auto;">
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <a href=" " class="btn btn-primary mx-auto d-block">Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% else %}
+            <div class="col">
+                <p class="text-center">No feedbacks found</p>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+{% else %}
+
+<div class="container">
+    <div class="row align-items-center my-5">
+        <div class="col">
+            <h2>User not found</h2>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}

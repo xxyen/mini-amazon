@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .form-section {
+        margin-top: 20px;
+        margin-bottom: 40px;
+    }
+    .product-item {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9fa;
+    }
+    .remove-btn {
+        color: red;
+        cursor: pointer;
+    }
+    .stock-view {
+        margin-top: 10px;
+        font-size: 16px;
+        color: #333;
+    }
+</style>
+
+<div class="form-section">
+    <h2>Add New Product</h2>
+    
+    <form method="post" action="/add_product"> <!-- Action set to the expected endpoint -->
+        <!-- <input type="text" name="name" placeholder="Product Name" required> -->
+        <select name="product_id" id="product_id">
+            {% for product in products_not_in_sell %}
+            <option value='{{ product.0 }}'>{{ product.2 }}</option>
+            {% endfor %}
+        </select>
+        <input type="number" name="price" placeholder="Price" required>
+        <input type="number" name="stock" placeholder="Stock" required>
+        <button type="submit">Add Product</button>
+    </form>
+</div>
+
+<div class="form-section">
+    <h2>Current Inventory</h2>
+    {% for product in products %}
+    <div class="product-item">
+        <h3>{{ product.name }}</h3>
+        <p>Category: {{ product.category }}</p>
+        <p>Price: ${{ product.price }}</p>
+        <p class="stock-view">Current Stock: {{ product.stock }}</p>
+        <form method="post" action= "{{ url_for('products.update_product', product_id=product.pid) }}"> <!-- Action set to the expected endpoint -->
+            <label for="stock-{{ product.pid }}">Update Stock:</label>
+            <input type="number" id="stock-{{ product.pid }}" name="stock" value="{{ product.stock }}" required>
+            <button type="submit">Update Stock</button>
+        </form>
+        <form method="post" action="{{ url_for('products.remove_product', product_id=product.pid) }}"> <!-- Action set to the expected endpoint -->
+            <button type="submit" class="remove-btn">Remove Product</button>
+        </form>
+    </div>
+    {% else %}
+    <p>No products found in your inventory.</p>
+    {% endfor %}
+</div>
+
+<script>
+</script>
+
+
+{% endblock %}
