@@ -14,17 +14,19 @@ createdb -U postgres "$dbname"
 
 psql -U postgres -af create.sql "$dbname"
 
-# python3 gen.py
-# psql -af load.sql $dbname
+python3 gendata.py
+psql  -U postgres -af loaddata.sql $dbname
 
-# rm -f Carts.csv
-# rm -f FeedbackProduct.csv
+rm -f carts.csv
+rm -f feedback_products.csv
 # rm -f FeedbackSeller.csv
-# rm -f LineItems.csv
-# rm -f Orders.csv
-# rm -f Products.csv
+rm -f line_items.csv
+rm -f orders.csv
+rm -f products.csv
 # rm -f ProductSeller.csv
-# rm -f Users.csv
+rm -f users.csv
+rm -f warehouses.csv
+rm -f ups.csv
 
 echo "All temp fake data files removed."
 
