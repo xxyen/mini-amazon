@@ -1,11 +1,14 @@
 import threading
+import time
 import world_amazon_pb2 as amazon_pb
 import amazon_ups_pb2 as amz_ups
 import socket
 from google.protobuf.internal.decoder import _DecodeVarint32
 from google.protobuf.internal.encoder import _EncodeVarint
 import psycopg2
+import math
 
+WAIT_FOR_ACK = 30
 WorldHost = "0.0.0.0"
 WorldPort = 23456
 UpsHost = ""
@@ -22,6 +25,8 @@ conn = psycopg2.connect(
 )
 ups_socket = 0
 world_socket = 0
+seqnum = 0
+seqnumLock = threading.Lock()
 
 def send_message(sock, message):
     """ Send a protobuf message to the server. """
@@ -108,11 +113,47 @@ def update_stock(purchase):
     finally:
         cursor.close()  # Ensure the cursor is closed after operation
 
+def confirmPacked(pack):
+    try:
+        orderId = pack.shipid
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s',
+            ('packed', orderId)
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback() 
+        print("An error occurred:", e)
+    finally:
+        cursor.close()  
 
-
-def amzWithWorld():
+def confirmLoaded(load):
+    try:
+        orderId = load.shipid
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s',
+            ('loaded', orderId)
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback() 
+        print("An error occurred:", e)
+    finally:
+        cursor.close()  
+        
+def worldWithAmz():
     while True:
         response = receive_message(world_socket,amazon_pb.AResponses)
+        for error in response.error:
+            ack_msg = amazon_pb.ACommands()
+            ack_msg.acks.append(error.seqnum)
+            send_message(world_socket,ack_msg)
+            if error.seqnum in worldSeqnums:
+                continue
+            else:
+                worldSeqnums.append(error.seqnum)
         for ack in response.acks:
             worldAcks.append(ack)
         for purchase in response.arrived:
@@ -133,16 +174,128 @@ def amzWithWorld():
                 continue
             else:
                 worldSeqnums.append(pack.seqnum)
-            # threadOfPack = threading.Thread(target=, args=(pack,))
-            # threadOfPack.start()
-        for error in response.error:
+            threadOfPack = threading.Thread(target=confirmPacked, args=(pack,))
+            threadOfPack.start()
+        for load in response.loaded:
             ack_msg = amazon_pb.ACommands()
-            ack_msg.acks.append(error.seqnum)
+            ack_msg.acks.append(load.seqnum)
             send_message(world_socket,ack_msg)
-            if error.seqnum in worldSeqnums:
+            if load.seqnum in worldSeqnums:
                 continue
             else:
-                worldSeqnums.append(error.seqnum)
+                worldSeqnums.append(load.seqnum)
+            threadOfLoad = threading.Thread(target=confirmLoaded, args=(load,))
+            threadOfLoad.start()
+        
+        if response.finished == True:
+            world_socket.close()
+
+def findBestWarehouse(orderId):
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT o_address_x, o_address_y FROM orders WHERE o_orderKey = %s;",
+                (orderId,)
+            )
+            destination = cur.fetchone()
+            if destination is None:
+                raise ValueError(f"No destination found for package ID {orderId}")
+
+            dest_x, dest_y = destination
+            cur.execute("SELECT w_wid, w_x, w_y FROM warehouse;")
+            warehouses = cur.fetchall()
+
+            # Determine the closest warehouse
+            min_distance = float('inf')
+            chosen_warehouse_id = None
+            for warehouse in warehouses:
+                distance = math.sqrt((warehouse[1] - dest_x) ** 2 + (warehouse[2] - dest_y) ** 2)
+                if distance < min_distance:
+                    min_distance = distance
+                    chosen_warehouse_id = warehouse[0]
+
+            if chosen_warehouse_id is None:
+                raise ValueError("No warehouse available for assignment.")
+
+            # Assign the closest warehouse to the package
+            cur.execute(
+                "UPDATE orders SET warehouse_id = %s WHERE o_orderKey = %s;",
+                (chosen_warehouse_id, orderId)
+            )
+            conn.commit()
+            return chosen_warehouse_id
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(f"An error occurred: {error}")
+        conn.rollback()
+        return None
+    finally:
+        if cur is not None:
+            cur.close()
+
+### manage sequence number in multi-threaded env
+def seqnumAdd():
+    with seqnumLock:
+        global seqnum
+        seqnum = seqnum+1
+        return seqnum
+    
+def purchase(whnum,productIds,descriptions,numbers):
+    msg_purchase = amazon_pb.ACommands()
+    buy = msg_purchase.buy.add()
+    buy.whnum = whnum
+    for index in range(len(productIds)):
+        product = buy.things.add()
+        product.id = productIds[index]
+        product.description = descriptions[index]
+        product.count = numbers[index]
+    buy.seqnum = seqnumAdd()
+    send_message(world_socket,msg_purchase)
+    #### validate ack
+    while True:
+        time.sleep(WAIT_FOR_ACK)
+        if buy.seqnum in worldAcks:
+            break
+        else:
+            send_message(world_socket,msg_purchase)
+
+    
+
+def amzWithWorld():
+    while True:
+        cursor = conn.cursor()
+        cursor.execute("SELECT o_orderKey FROM orders WHERE o_fulfilment = 'processing';")
+        orders = cursor.fetchall()
+        for order in orders:
+            findBestWarehouse(order[0])
+            cursor.execute("""
+                SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number
+                FROM lineItems li
+                JOIN products p ON p.p_pid = li.li_pid
+                JOIN orders o ON o.o_orderKey = li.li_orderKey
+                WHERE o.o_orderKey = %s;
+            """, (order[0],))
+            results = cursor.fetchall()
+            descriptions = []
+            numbers = []
+            productIds = []
+            warehouse_id = 0
+            for index, row in enumerate(results):
+                if index == 0:
+                    warehouse_id = row[0]
+                # Append data to lists
+                productIds.append(row[1])
+                descriptions.append(row[2])
+                numbers.append(row[3])
+
+                ### buy
+                purchase(warehouse_id,productIds,descriptions,numbers)
+                cursor.execute('UPDATE orders SET o.o_fulfilment = %s WHERE o.o_orderKey = %s', ('processed', order[0]))
+
+                ### 
+            
+
+
 
 def main():
     ### connect to UPS and get worldId
@@ -178,14 +331,13 @@ def main():
         print("Failed to create a new world.")
 
     if new_world_id:
-        thread1 = threading.Thread(target=amzWithWorld,args=())
-    # Test connect to an existing world
-    # connect.worldid = 9
-    # if connect_world(sock, connect):
-    #     print(f"Connected to existing world with ID {connect.worldid}.")
-    # else:
-    #     print(f"Failed to connect to existing world with ID {connect.worldid}.")
-
+        threads = []
+        thread1 = threading.Thread(target=worldWithAmz,args=())
+        threads.append(thread1)
+        # thread2 = threading.Thread(target=,args=())
+        thread3 = threading.Thread(target=amzWithWorld,args=())
+        threads.append(thread3)
+    
 
 
 if __name__ == '__main__':

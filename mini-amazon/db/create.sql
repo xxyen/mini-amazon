@@ -40,7 +40,7 @@ CREATE TABLE warehouse
     w_y  int default 0
 );
 
-CREATE TYPE fulfilmentStatus AS ENUM ('processing','packing','packed','loading','loaded','delivering', 'delivered');
+CREATE TYPE fulfilmentStatus AS ENUM ('processing','packing','packed','loading','loaded','delivering', 'delivered','processed');
 
 
 CREATE TABLE orders
