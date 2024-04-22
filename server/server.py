@@ -113,18 +113,7 @@ def update_stock(purchase):
     finally:
         cursor.close()  # Ensure the cursor is closed after operation
 
-# TBD
-# handle ready msg from world
-# Need to call request_truck_to_ups function
-
-# TBD
-# Send toLoad msg to warehouse to load the package
-def toLoad(msg_truck_arrive):
-    pass
-
-# TBD
-# handle loaded msg from world
-# Need to call load_package_to_ups functiondef confirmPacked(pack):
+def confirmPackedAndAskTruck(pack):
     try:
         orderId = pack.shipid
         cursor = conn.cursor()
@@ -137,9 +126,10 @@ def toLoad(msg_truck_arrive):
         conn.rollback() 
         print("An error occurred:", e)
     finally:
-        cursor.close()  
+        cursor.close() 
+        request_truck_to_ups(orderId)
 
-def confirmLoaded(load):
+def confirmLoadedAndAskDeliver(load):
     try:
         orderId = load.shipid
         cursor = conn.cursor()
@@ -148,11 +138,15 @@ def confirmLoaded(load):
             ('loaded', orderId)
         )
         conn.commit()
+        cursor.execute("SELECT truck_id FROM orders WHERE o_orderKey = %s;",(orderId))
+        truckId = cursor.fetchone()[0]
     except Exception as e:
         conn.rollback() 
         print("An error occurred:", e)
     finally:
         cursor.close()  
+
+        load_package_to_ups(orderId,truckId)
         
 def worldWithAmz():
     while True:
@@ -185,7 +179,7 @@ def worldWithAmz():
                 continue
             else:
                 worldSeqnums.append(pack.seqnum)
-            threadOfPack = threading.Thread(target=confirmPacked, args=(pack,))
+            threadOfPack = threading.Thread(target=confirmPackedAndAskTruck, args=(pack,))
             threadOfPack.start()
         for load in response.loaded:
             ack_msg = amazon_pb.ACommands()
@@ -195,7 +189,7 @@ def worldWithAmz():
                 continue
             else:
                 worldSeqnums.append(load.seqnum)
-            threadOfLoad = threading.Thread(target=confirmLoaded, args=(load,))
+            threadOfLoad = threading.Thread(target=confirmLoadedAndAskDeliver, args=(load,))
             threadOfLoad.start()
         
         if response.finished == True:
@@ -271,6 +265,50 @@ def purchase(whnum,productIds,descriptions,numbers):
             send_message(world_socket,msg_purchase)
 
     
+### check the inventory
+def checkInventory(warehouse_id,productIds,numbers):
+    cursor = conn.cursor()
+    for index in range(len(productIds)):
+        cursor.execute("SELECT inv_qty FROM inventories WHERE inv_pid = %s AND inv_wid = %s;",(warehouse_id,productIds[index]))
+        inventory = cursor.fetchone()[0]
+        #### under stock
+        if inventory < numbers[index]:
+            return False
+    
+    cursor.close()
+    return True
+
+### packing
+def pack(warehouse_id,productIds,numbers,descriptions,oid):
+    msg_pack = amazon_pb.ACommands()
+    packs = msg_pack.topack.add()
+    packs.whnum = warehouse_id
+    packs.shipid = oid
+    packs.seqnum = seqnumAdd()
+    for index in range(len(productIds)):
+        product = packs.things.add()
+        product.id = productIds[index]
+        product.description = descriptions[index]
+        product.count = numbers[index]
+        #### reduce stock
+        cursor = conn.cursor()
+        cursor.execute("""
+                SELECT inv_qty FROM inventories
+                WHERE inv_pid = %s AND inv_wid = %s;
+            """, (productIds[index], warehouse_id))
+        inventory = cursor.fetchone()[0]
+        cursor.execute('UPDATE inventories SET inv_qty = %s WHERE inv_pid = %s AND inv_wid = %s;',
+                    (inventory-numbers[index], productIds[index], warehouse_id))
+        conn.commit()
+    
+    send_message(world_socket,msg_pack)
+    cursor.execute(
+            'UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s',
+            ('packing', oid)
+        )
+    conn.commit()
+    conn.close()
+
 
 def amzWithWorld():
     while True:
@@ -299,11 +337,18 @@ def amzWithWorld():
                 descriptions.append(row[2])
                 numbers.append(row[3])
 
-                ### buy
-                purchase(warehouse_id,productIds,descriptions,numbers)
-                cursor.execute('UPDATE orders SET o.o_fulfilment = %s WHERE o.o_orderKey = %s', ('processed', order[0]))
+            ### buy
+            purchase(warehouse_id,productIds,descriptions,numbers)
+            cursor.execute('UPDATE orders SET o.o_fulfilment = %s WHERE o.o_orderKey = %s', ('processed', order[0]))
 
-                ### 
+            ### check stock and pack
+            while True:
+                if checkInventory(warehouse_id,productIds,numbers):
+                    pack(warehouse_id,productIds,numbers,descriptions,order[0])
+                    break
+
+        conn.commit()
+        cursor.close()        
             
 
 
@@ -473,14 +518,16 @@ def main():
         print("Failed to create a new world.")
 
     if new_world_id:
-        thread1 = threading.Thread(target=amzWithWorld,args=())
-    # Test connect to an existing world
-    # connect.worldid = 9
-    # if connect_world(sock, connect):
-    #     print(f"Connected to existing world with ID {connect.worldid}.")
-    # else:
-    #     print(f"Failed to connect to existing world with ID {connect.worldid}.")
-
+        handlers = [worldWithAmz, amzWithUPS, amzWithWorld]
+        threads = []
+        for handler in handlers:
+            thread = threading.Thread(target=handler)
+            threads.append(thread)
+            thread.start()
+        
+        for thread in threads:
+            thread.join()
+    conn.close()   
 
 
 if __name__ == '__main__':
