@@ -113,7 +113,18 @@ def update_stock(purchase):
     finally:
         cursor.close()  # Ensure the cursor is closed after operation
 
-def confirmPacked(pack):
+# TBD
+# handle ready msg from world
+# Need to call request_truck_to_ups function
+
+# TBD
+# Send toLoad msg to warehouse to load the package
+def toLoad(msg_truck_arrive):
+    pass
+
+# TBD
+# handle loaded msg from world
+# Need to call load_package_to_ups functiondef confirmPacked(pack):
     try:
         orderId = pack.shipid
         cursor = conn.cursor()
@@ -297,6 +308,137 @@ def amzWithWorld():
 
 
 
+
+#========================== Amazon with UPS ============================
+
+# Add truck_id to the pakcage and send toLoad msg to the world
+def handle_truck_arrive(msg_truck_arrive):
+    truck_id = msg_truck_arrive.truck_id
+    package_id = msg_truck_arrive.package_id
+    # Add truck_id to the order/package
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE orders SET truck_id = %s WHERE o_orderKey = %s;", (truck_id, package_id))
+        conn.commit()
+        # Send msg to warehouse to load the pacakge
+        # TBD
+        toLoad(msg_truck_arrive)
+    except Exception as e:
+        conn.rollback()
+        print("Failed to add truck_id to packed pakcage:", e)
+    finally:
+        cursor.close() 
+
+# Send request_truck msg to UPS after received ready msg from world
+def request_truck_to_ups(package_id):
+    command = amz_ups.AUCommands()
+    request_truck = amz_ups.request_truck()
+    request_truck.package_id = package_id
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT warehouse_id, ups_name, o_address_x, o_address_y FROM orders WHERE package_id = %s;", (package_id))
+        row = cursor.fetchOne()
+        request_truck.warehouse_id = row[0]
+        request_truck.ups_user = row[1]
+        request_truck.dest_x = row[2]
+        request_truck.dest_y = row[3]
+
+        cursor.execute("SELECT w_x, w_y FROM warehouse WHERE w_wid = %s;", (request_truck.warehouse_id))
+        row = cursor.fetchOne()
+        request_truck.warehouse_x = row[0]
+        request_truck.warehousr_y = row[1]
+
+        cursor.execute("SELECT li_pid FROM lineItems WHERE li_orderKey = %s;", (package_id))
+        rows = cursor.fetchAll()
+        for row in rows:
+            cursor.execute("SELECT p_productName, p_stock FROM products WHERE w_wid = %s;", (row[0]))
+            row_product = cursor.fetchOne()
+            item = amz_ups.Item()
+            item.name = row_product[0]
+            item.qunatity = row_product[1]
+            request_truck.items.append(item)
+    
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        print("Failed to get address of loaded package:", e)
+    finally:
+        cursor.close()
+    
+    command.request_truck.append(request_truck)
+    send_message(ups_socket, command)
+
+# Send load_package msg to UPS after received loaded msg from world
+# Let the truck go
+def load_package_to_ups(package_id, truck_id):
+    command = amz_ups.AUCommands()
+    loaded = amz_ups.load_package()
+    loaded.package_id = package_id
+    loaded.truck_id = truck_id
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT o_address_x, o_address_y FROM orders WHERE package_id = %s;", (package_id))
+        row = cursor.fetchOne()
+        loaded.dest_x = row[0]
+        loaded.dest_y = row[1]
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        print("Failed to get address of loaded package:", e)
+    finally:
+        cursor.close()
+    
+    command.load_pack.append(loaded)
+    send_message(ups_socket, command)
+
+
+# Change the package status to delivering
+def handle_start_deliver(msg_start_deliver):
+    package_id = msg_start_deliver.package_id
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE orders SET o_fulfilment = 'delivering' WHERE package_id = %s;", (package_id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print("Failed to update to delivering status:", e)
+    finally:
+        cursor.close()
+
+# Change the package status to delivered
+def handle_delivered_package(msg_deliverd_package):
+    package_id = msg_deliverd_package.package_id
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE orders SET o_fulfilment = 'delivered' WHERE package_id = %s;", (package_id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print("Failed to update to delivered status:", e)
+    finally:
+        cursor.close()
+    
+
+def amzWithUPS():
+    while True:
+        response = receive_message(ups_socket,amz_ups.UACommands)
+        for msg_truck_arrive in response.response_truck_arrive:
+            threadOfTruckArrive = threading.Thread(target=handle_truck_arrive,args=(msg_truck_arrive,))
+            threadOfTruckArrive.start()
+        for msg_start_deliver in response.start_deliver:
+            threadOfStartDeliver = threading.Thread(target=handle_start_deliver, args=(msg_start_deliver,))
+            threadOfStartDeliver.start()
+        for msg_deliverd_package in response.package_delivered:
+            threadOfDeliverdPack = threading.Thread(target=handle_delivered_package, args=(msg_deliverd_package,))
+            threadOfDeliverdPack.start()
+        for msg_disconnect in response.disconnect:
+            if(msg_disconnect == True):
+                ups_socket.close()
+
+
 def main():
     ### connect to UPS and get worldId
     ups = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -331,13 +473,14 @@ def main():
         print("Failed to create a new world.")
 
     if new_world_id:
-        threads = []
-        thread1 = threading.Thread(target=worldWithAmz,args=())
-        threads.append(thread1)
-        # thread2 = threading.Thread(target=,args=())
-        thread3 = threading.Thread(target=amzWithWorld,args=())
-        threads.append(thread3)
-    
+        thread1 = threading.Thread(target=amzWithWorld,args=())
+    # Test connect to an existing world
+    # connect.worldid = 9
+    # if connect_world(sock, connect):
+    #     print(f"Connected to existing world with ID {connect.worldid}.")
+    # else:
+    #     print(f"Failed to connect to existing world with ID {connect.worldid}.")
+
 
 
 if __name__ == '__main__':
