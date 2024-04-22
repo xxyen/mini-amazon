@@ -124,7 +124,8 @@ def toLoad(msg_truck_arrive):
 
 # TBD
 # handle loaded msg from world
-# Need to call load_package_to_ups functiondef confirmPacked(pack):
+# Need to call load_package_to_ups function
+def confirmPacked(pack):
     try:
         orderId = pack.shipid
         cursor = conn.cursor()
