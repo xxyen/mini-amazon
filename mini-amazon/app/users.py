@@ -74,7 +74,6 @@ class RegistrationForm(FlaskForm):
     address = StringField('Address', validators=[DataRequired()])  
     address_x = IntegerField('Address X', validators=[DataRequired(), NumberRange(min=-10000, max=10000)], default=0)
     address_y = IntegerField('Address Y', validators=[DataRequired(), NumberRange(min=-10000, max=10000)], default=0)
-    isSeller = BooleanField('Register as A Seller') 
     submit = SubmitField('Register')
     
 
@@ -95,8 +94,7 @@ def register():
                          form.lastname.data,
                          form.address.data,
                          form.address_x.data,
-                         form.address_y.data,
-                         form.isSeller.data):
+                         form.address_y.data):
             flash('Congratulations, you are now a registered user!')
             return redirect(url_for('users.login'))
     return render_template('register.html', title='Register', form=form)

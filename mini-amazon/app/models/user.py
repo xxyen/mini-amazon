@@ -32,7 +32,7 @@ class User(UserMixin):
     @staticmethod
     def get_by_auth(email, password):
         rows = app.db.execute("""
-SELECT u_password,u_uid, u_email, u_firstname, u_lastname,u_address,u_balance,u_image, u_isSeller
+SELECT u_password,u_uid, u_email, u_firstname, u_lastname,u_address,u_balance,u_image, u_isSeller, u_address_x, u_address_y
 FROM Users
 WHERE u_email = :email
 """,
@@ -56,16 +56,16 @@ WHERE u_email = :email
         return len(rows) > 0
 
     @staticmethod
-    def register(email, password, firstname, lastname, address, isSeller,address_x,address_y):
+    def register(email, password, firstname, lastname, address, address_x,address_y):
         try:
             rows = app.db.execute("""
-INSERT INTO Users(u_email, u_password, u_firstname, u_lastname, u_address, u_isSeller,u_address_x,u_address_y)
-VALUES(:email, :password, :firstname, :lastname, :address, :isSeller, :address_x,:address_y)
+INSERT INTO Users(u_email, u_password, u_firstname, u_lastname, u_address, u_address_x,u_address_y)
+VALUES(:email, :password, :firstname, :lastname, :address, :address_x,:address_y)
 RETURNING u_uid
 """,
                                   email=email,
                                   password=generate_password_hash(password),
-                                  firstname=firstname, lastname=lastname,address=address, isSeller=isSeller,address_x=address_x,address_y=address_y)
+                                  firstname=firstname, lastname=lastname,address=address, address_x=address_x,address_y=address_y)
             id = rows[0][0]
             print("inserting success!")
             return User.get(id)
