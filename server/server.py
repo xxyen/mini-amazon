@@ -350,8 +350,24 @@ def amzWithWorld():
         conn.commit()
         cursor.close()        
             
-
-
+### ask world to load 
+def toLoad(msg_truck_arrive):
+    msg_toload = amazon_pb.ACommands()
+    toLoad = msg_toload.load.add()
+    toLoad.whnum = msg_truck_arrive.warehouse_id
+    toLoad.truckid = msg_truck_arrive.truck_id
+    toLoad.shipid = msg_truck_arrive.package_id
+    toLoad.seqnum = seqnumAdd()
+    send_message(world_socket,msg_toload)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE orders SET o_fulfilment = 'loading' WHERE o_orderKey = %s;", (msg_truck_arrive.package_id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print("Failed to update to delivering status:", e)
+    finally:
+        cursor.close()
 
 
 #========================== Amazon with UPS ============================
@@ -381,7 +397,7 @@ def request_truck_to_ups(package_id):
     request_truck.package_id = package_id
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT warehouse_id, ups_name, o_address_x, o_address_y FROM orders WHERE package_id = %s;", (package_id))
+        cursor.execute("SELECT warehouse_id, ups_name, o_address_x, o_address_y FROM orders WHERE o_orderKey = %s;", (package_id))
         row = cursor.fetchOne()
         request_truck.warehouse_id = row[0]
         request_truck.ups_user = row[1]
@@ -423,7 +439,7 @@ def load_package_to_ups(package_id, truck_id):
     loaded.truck_id = truck_id
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT o_address_x, o_address_y FROM orders WHERE package_id = %s;", (package_id))
+        cursor.execute("SELECT o_address_x, o_address_y FROM orders WHERE o_orderKey = %s;", (package_id))
         row = cursor.fetchOne()
         loaded.dest_x = row[0]
         loaded.dest_y = row[1]
@@ -456,7 +472,7 @@ def handle_start_deliver(msg_start_deliver):
     package_id = msg_start_deliver.package_id
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_fulfilment = 'delivering' WHERE package_id = %s;", (package_id))
+        cursor.execute("UPDATE orders SET o_fulfilment = 'delivering' WHERE o_orderKey = %s;", (package_id))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -469,7 +485,7 @@ def handle_delivered_package(msg_deliverd_package):
     package_id = msg_deliverd_package.package_id
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_fulfilment = 'delivered' WHERE package_id = %s;", (package_id))
+        cursor.execute("UPDATE orders SET o_fulfilment = 'delivered' WHERE o_orderKey = %s;", (package_id))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -484,7 +500,7 @@ def handle_res_dest_changed(msg_res_dest_changed):
     if(msg_res_dest_changed.success):
         cursor = conn.cursor()
         try:
-            cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE package_id = %s;", (new_x,new_y, package_id))
+            cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE o_orderKey = %s;", (new_x,new_y, package_id))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -498,7 +514,7 @@ def handle_dest_changed_from_ups(msg_dest_changed):
     new_y = msg_dest_changed.new_dest_y
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE package_id = %s;", (new_x,new_y, package_id))
+        cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE o_orderKey = %s;", (new_x,new_y, package_id))
         conn.commit()
     except Exception as e:
         conn.rollback()
