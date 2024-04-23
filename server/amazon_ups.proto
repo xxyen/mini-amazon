@@ -29,11 +29,18 @@ message load_package{
 	required int64 truck_id = 4;
 }
 
+message request_destination_change {
+	required int64 package_id = 1;
+	required int64 new_dest_x = 2;
+	required int64 new_dest_y = 3;
+}
+
 message AUCommands {
 	optional bool connected = 1;
 	optional request_truck truck_req = 2;
 	optional load_package load_pack = 3;
-	optional bool disconnect = 4;
+	optional request_destination_change dest_ch = 4;
+	optional bool disconnect = 5;
 }
 
 	
@@ -58,10 +65,27 @@ message delivered_package {
     required int64 dest_y = 4;
 } 
 
+message response_destination_changed {
+	required int64 package_id = 1;
+	required int64 new_dest_x = 2;
+	required int64 new_dest_y = 3;
+	required bool success = 4;
+} 
+
+message msg_destination_changed {
+	required string ups_user = 1;
+	required int64 package_id = 2;
+	required int64 new_dest_x = 3;
+	required int64 new_dest_y = 4;
+}
+
+
 message UACommands {
     optional int64 world_id = 1;
 	optional response_truck_arrive  truck_arrive = 2;
 	optional start_deliver start_deliver = 3;
 	optional delivered_package package_delivered = 4;
-	optional bool disconnect = 5;
+	optional response_destination_changed dest_response = 5;
+	optional msg_destination_changed dest_notification = 6;
+	optional bool disconnect = 7;
 }

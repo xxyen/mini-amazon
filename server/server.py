@@ -439,6 +439,17 @@ def load_package_to_ups(package_id, truck_id):
     command.load_pack.append(loaded)
     send_message(ups_socket, command)
 
+# Send request_destination_change msg to UPS
+# Not change address until receive response msg from UPS
+def request_destination_chagne_to_ups(package_id, new_x, new_y):
+    command = amz_ups.AUCommands()
+    dest_ch = amz_ups.request_destination_change()
+    dest_ch.package_id = package_id
+    dest_ch.new_dest_x = new_x
+    dest_ch.new_dest_y = new_y
+    command.dest_ch.appned(dest_ch)
+    send_message(ups_socket, command)
+
 
 # Change the package status to delivering
 def handle_start_deliver(msg_start_deliver):
@@ -465,12 +476,40 @@ def handle_delivered_package(msg_deliverd_package):
         print("Failed to update to delivered status:", e)
     finally:
         cursor.close()
+
+def handle_res_dest_changed(msg_res_dest_changed):
+    package_id = msg_res_dest_changed.pacakge_id
+    new_x = msg_res_dest_changed.new_dest_x
+    new_y = msg_res_dest_changed.new_dest_y
+    if(msg_res_dest_changed.success):
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE package_id = %s;", (new_x,new_y, package_id))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print("Failed to update to new address:", e)
+        finally:
+            cursor.close()
     
+def handle_dest_changed_from_ups(msg_dest_changed):
+    package_id = msg_dest_changed.package_id
+    new_x = msg_dest_changed.new_dest_x
+    new_y = msg_dest_changed.new_dest_y
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE package_id = %s;", (new_x,new_y, package_id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print("Failed to update to new address:", e)
+    finally:
+        cursor.close()
 
 def amzWithUPS():
     while True:
         response = receive_message(ups_socket,amz_ups.UACommands)
-        for msg_truck_arrive in response.response_truck_arrive:
+        for msg_truck_arrive in response.truck_arrive:
             threadOfTruckArrive = threading.Thread(target=handle_truck_arrive,args=(msg_truck_arrive,))
             threadOfTruckArrive.start()
         for msg_start_deliver in response.start_deliver:
@@ -479,6 +518,12 @@ def amzWithUPS():
         for msg_deliverd_package in response.package_delivered:
             threadOfDeliverdPack = threading.Thread(target=handle_delivered_package, args=(msg_deliverd_package,))
             threadOfDeliverdPack.start()
+        for msg_res_dest_changed in response.dest_response:
+            threadOfDestChanged = threading.Thread(target=handle_res_dest_changed, args=(msg_res_dest_changed,))
+            threadOfDestChanged.start()
+        for msg_dest_changed in response.dest_notification:
+            threadOfDestChangedUPS = threading.Thread(target=handle_dest_changed_from_ups, args=(msg_dest_changed,))
+            threadOfDestChangedUPS.start()
         for msg_disconnect in response.disconnect:
             if(msg_disconnect == True):
                 ups_socket.close()
