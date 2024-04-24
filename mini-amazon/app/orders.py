@@ -12,7 +12,9 @@ from flask import Blueprint
 bp = Blueprint('orders', __name__)
 
 @bp.route('/order/<int:user_id>/submit')
-def submitOrder(user_id,address_x,address_y):
+def submitOrder(user_id):
+    address_x = request.form.get('addr_x')
+    address_y = request.form.get('addr_y')
     if current_user.is_authenticated and current_user.id == user_id:
         ### insert into order 
         oid = Order.insert_to_orders(user_id,address_x,address_y)

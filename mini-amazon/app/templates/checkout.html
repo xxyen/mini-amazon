@@ -173,7 +173,7 @@
 
         <div>
             <span style="display: block;margin-top: 20px;margin-bottom: 20px;">Total Price: ${{ cart_total_price }}</span>
-            <form action="{{ url_for('users.checkout', user_id=current_user.id) }}" method="post">
+            <form action="{{ url_for('orders.submitOrder', user_id=current_user.id) }}" method="post">
                 <div class="mb-3">
                     <label for="addr_x">Address X (1-1000):</label>
                     <input type="number" id="addr_x" name="addr_x" class="styled-input"  min="1" max="1000" required>
