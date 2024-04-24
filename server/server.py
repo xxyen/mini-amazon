@@ -36,10 +36,20 @@ def send_message(sock, message):
 
 def receive_message(sock, message_type):
     """ Receive a protobuf message from the server. """
+    # var_int_buff = []
+    # while True:
+    #     buf = socket.recv(1)
+    #     var_int_buff += buf
+    #     print(var_int_buff)
+    #     msg_len, new_pos = _DecodeVarint32(var_int_buff, 0)
+    #     if new_pos != 0:
+    #         break
+    # whole_message = socket.recv(msg_len)
     var_int_buff = []
     while True:
         buf = sock.recv(1)
         var_int_buff += buf
+        print(var_int_buff)
         length, pos = _DecodeVarint32(var_int_buff, 0)
         if pos != 0:
             break
@@ -56,6 +66,7 @@ def receive_message(sock, message_type):
 def connect_world(sock, connect):
     """ Connect to the simulated world, creating a new world if no world_id is provided. """
     send_message(sock, connect)
+    print(connect)
     connected = receive_message(sock, amazon_pb.AConnected)
 
     if connected and connected.result == "connected!":
@@ -77,7 +88,7 @@ def initWarehouse():
     warehouses = []
     for x, y in warehouse_locations:
         cursor.execute(
-            "INSERT INTO warehouse (w_x, w_y) VALUES (%s, %s) RETURNING id;", (x, y))
+            "INSERT INTO warehouse (w_x, w_y) VALUES (%s, %s) RETURNING w_wid;", (x, y))
         warehouse_id = cursor.fetchone()[0]
         warehouses.append({'id': warehouse_id, 'x': x, 'y': y})
     
@@ -546,18 +557,18 @@ def amzWithUPS():
 
 
 def main():
-    ### connect to UPS and get worldId
-    ups = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ups.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    ups.connect((UpsHost,UpsPort))
-    ups_socket = ups
-    #### amz send connected msg to ups
-    msg_ups_connect = amz_ups.AUCommands()
-    msg_ups_connect.connected = True
-    send_message(ups,msg_ups_connect)
+    # ### connect to UPS and get worldId
+    # ups = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # ups.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # ups.connect((UpsHost,UpsPort))
+    # ups_socket = ups
+    # #### amz send connected msg to ups
+    # msg_ups_connect = amz_ups.AUCommands()
+    # msg_ups_connect.connected = True
+    # send_message(ups,msg_ups_connect)
 
-    msg = receive_message(ups,amazon_pb.UACommands)
-    worldId = msg.world_id
+    # msg = receive_message(ups,amazon_pb.UACommands)
+    # worldId = msg.world_id
     ### connect to world
     amz = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     amz.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -567,8 +578,10 @@ def main():
     warehouses = initWarehouse()
     connect = amazon_pb.AConnect()
     connect.isAmazon = True
-    connect.worldid = worldId
-    connect = amazon_pb.AConnect()
+    # connect.worldid = worldId
+    # Test connect world
+    connect.worldid = 1
+    # connect = amazon_pb.AConnect()
     for warehouse in warehouses:
         connect.initwh.add(id=warehouse['id'], x=warehouse['x'], y=warehouse['y'])
     ### Test create a new world (new_world_id is None -- unconnected else connected)
@@ -579,7 +592,7 @@ def main():
         print("Failed to create a new world.")
 
     if new_world_id:
-        handlers = [worldWithAmz, amzWithUPS, amzWithWorld]
+        handlers = [worldWithAmz, amzWithWorld]
         threads = []
         for handler in handlers:
             thread = threading.Thread(target=handler)

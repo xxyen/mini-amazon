@@ -36,7 +36,7 @@ class Order:
             INSERT INTO orders (o_processingDate, o_uid, o_fulfilment,o_address_x,o_address_y)
             VALUES (:date, :uid, :status, :x, :y) RETURNING o_orderKey
                               ''',date=datetime.now(), uid=uid, status='processing', x=addres_x,y=address_y)
-        order_key = result.fetchone()[0]
+        order_key = result[0][0]
         return order_key
     
     @staticmethod 
@@ -45,10 +45,14 @@ class Order:
             pid = cart.c_pid
             amount = cart.total_price
             number = cart.c_quantity
+            print(oid)
+            print(pid)
+            print(amount)
+            print(number)
             app.db.execute(
                 '''
             INSERT INTO lineItems (li_orderKey, li_pid, li_amount,li_number)
-            VALUES (:oid, :pid, :amount, :number),
+            VALUES (:oid, :pid, :amount, :number)
             ''',oid=oid,pid=pid,amount=amount,number=number
             )
 

@@ -11,7 +11,7 @@ from flask import Blueprint
 
 bp = Blueprint('orders', __name__)
 
-@bp.route('/order/<int:user_id>/submit')
+@bp.route('/order/<int:user_id>/submit',methods=['GET','POST'])
 def submitOrder(user_id):
     address_x = request.form.get('addr_x')
     address_y = request.form.get('addr_y')
