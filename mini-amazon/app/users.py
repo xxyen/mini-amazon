@@ -186,6 +186,8 @@ def change_quantity(user_id,pid):
 
 @bp.route('/cart/checkout/<int:user_id>', methods=['GET','POST'])
 def checkout(user_id): 
+    address_x = request.form.get('addr_x')
+    address_y = request.form.get('addr_y')
     user = User.get_by_uid(user_id)
     Cart.checkout(current_user.id)
     Order.add_order(current_user.id)
@@ -195,6 +197,16 @@ def checkout(user_id):
     cart_total_price=0
     return render_template("order_detail.html")
 
+@bp.route('/cart/go_to_checkout/<int:user_id>', methods=['GET', 'POST'])
+def go_to_checkout(user_id): 
+    user = User.get_by_uid(user_id)
+    cart_items = Cart.get(current_user.id) 
+    cart_found  = any(not cart.c_status for cart in cart_items)
+    cart_total_price=0
+    for cart in cart_items:
+        if cart.c_status==False:
+            cart_total_price += cart.total_price
+    return render_template("checkout.html",user=user,cart_items=cart_items,cart_found=cart_found,cart_total_price=cart_total_price)
 
 # #seller part
 # @bp.route('/edit_products')
