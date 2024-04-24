@@ -5,11 +5,22 @@ from flask_paginate import Pagination, get_page_args
 
 from .models.user import User
 from .models.order import Order
+from .models.cart import Cart
 
 from flask import Blueprint
 
 bp = Blueprint('orders', __name__)
 
+@bp.route('/order/<int:user_id>/submit')
+def submitOrder(user_id,address_x,address_y):
+    if current_user.is_authenticated and current_user.id == user_id:
+        ### insert into order 
+        oid = Order.insert_to_orders(user_id,address_x,address_y)
+        ### obtain all carts
+        carts = Cart.get(user_id)
+        ### insert into lineItems
+        Order.insert_to_lineItems(carts,oid)
+    return redirect(url_for('orders.getUserOrders',user_id=current_user.id))
 
 @bp.route('/order/<int:user_id>/order_detail/<int:order_id>')
 def getOrderDetail(user_id, order_id):
