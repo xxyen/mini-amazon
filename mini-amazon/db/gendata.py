@@ -50,7 +50,8 @@ for _ in range(num_products):
         'category': category,
         'productName': fake.word(),
         'stock': random.randint(0, 500),
-        'description': fake.text(),
+        # 'description': fake.text(max_nb_chars=40),
+        'description': fake.word(),
         'image': fake.image_url(),
         'price': round(random.uniform(1, 1000), 2)
     })

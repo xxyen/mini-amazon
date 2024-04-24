@@ -17,7 +17,7 @@ worldSeqnums = []
 worldAcks = []
 ### connect to db
 conn = psycopg2.connect(
-    database="amazon",
+    database='amazon',
     user='postgres',
     password='123456',
     host='localhost',
@@ -34,34 +34,47 @@ def send_message(sock, message):
     _EncodeVarint(sock.sendall, len(data))
     sock.sendall(data)
 
-def receive_message(sock, message_type):
-    """ Receive a protobuf message from the server. """
-    # var_int_buff = []
-    # while True:
-    #     buf = socket.recv(1)
-    #     var_int_buff += buf
-    #     print(var_int_buff)
-    #     msg_len, new_pos = _DecodeVarint32(var_int_buff, 0)
-    #     if new_pos != 0:
-    #         break
-    # whole_message = socket.recv(msg_len)
-    var_int_buff = []
+# def receive_message(sock, message_type):
+#     """ Receive a protobuf message from the server. """
+#     var_int_buff = []
+#     while True:
+#         buf = sock.recv(1)
+#         var_int_buff += buf
+#         print(var_int_buff)
+#         length, pos = _DecodeVarint32(var_int_buff, 0)
+#         if pos != 0:
+#             break
+#     data = sock.recv(length)
+#     message = message_type()
+#     try:
+#         message.ParseFromString(data)
+#     except Exception as e:
+#         print("Failed to parse message:", str(e))
+#         print("Data received:", data)
+#         return None
+#     return message
+def receive_message(sock, response_type):
+    data = read_varint_delimited_stream(sock)
+    response = response_type()
+    response.ParseFromString(data)
+    return response
+    
+
+# read google buffer protocol response from a socket, return the raw data
+def read_varint_delimited_stream(sock):
+    print("socket in receive")
+    print(sock)
+    size_variant = b''
     while True:
-        buf = sock.recv(1)
-        var_int_buff += buf
-        print(var_int_buff)
-        length, pos = _DecodeVarint32(var_int_buff, 0)
-        if pos != 0:
-            break
-    data = sock.recv(length)
-    message = message_type()
-    try:
-        message.ParseFromString(data)
-    except Exception as e:
-        print("Failed to parse message:", str(e))
-        print("Data received:", data)
-        return None
-    return message
+        size_variant += sock.recv(1)
+        try:
+            size = _DecodeVarint32(size_variant, 0)[0]
+        except IndexError:
+            continue # if decode failed, read one more byte from stream
+        break # else if decode succeeded, break. Size is available
+    
+    data = sock.recv(size) # data in string format
+    return data
 
 def connect_world(sock, connect):
     """ Connect to the simulated world, creating a new world if no world_id is provided. """
@@ -79,10 +92,9 @@ def connect_world(sock, connect):
 
 def initWarehouse():
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM warehouse;")
-    cursor.execute("DELETE FROM inventories;")
-    cursor.execute("ALTER SEQUENCE warehouse_w_wid_seq RESTART WITH 1;")
-    cursor.execute("ALTER SEQUENCE inventories_inv_invid_seq RESTART WITH 1;")
+    cursor.execute("TRUNCATE TABLE inventories, warehouse;")
+    # cursor.execute("ALTER SEQUENCE warehouse_w_wid_seq RESTART WITH 1;")
+    # cursor.execute("ALTER SEQUENCE inventories_inv_invid_seq RESTART WITH 1;")
     conn.commit()
     warehouse_locations = [(10, 10), (50, 50), (100, 100)]
     warehouses = []
@@ -98,6 +110,7 @@ def initWarehouse():
 
 ### update stock
 def update_stock(purchase):
+    print("update stock!!!")
     whnum = purchase.whnum
     cursor = conn.cursor()
     try:
@@ -281,6 +294,7 @@ def checkInventory(warehouse_id,productIds,numbers):
     cursor = conn.cursor()
     for index in range(len(productIds)):
         cursor.execute("SELECT inv_qty FROM inventories WHERE inv_pid = %s AND inv_wid = %s;",(warehouse_id,productIds[index]))
+        print(cursor.fetchone())
         inventory = cursor.fetchone()[0]
         #### under stock
         if inventory < numbers[index]:
@@ -296,13 +310,14 @@ def pack(warehouse_id,productIds,numbers,descriptions,oid):
     packs.whnum = warehouse_id
     packs.shipid = oid
     packs.seqnum = seqnumAdd()
+    cursor = conn.cursor()
+
     for index in range(len(productIds)):
         product = packs.things.add()
         product.id = productIds[index]
         product.description = descriptions[index]
         product.count = numbers[index]
         #### reduce stock
-        cursor = conn.cursor()
         cursor.execute("""
                 SELECT inv_qty FROM inventories
                 WHERE inv_pid = %s AND inv_wid = %s;
@@ -350,7 +365,7 @@ def amzWithWorld():
 
             ### buy
             purchase(warehouse_id,productIds,descriptions,numbers)
-            cursor.execute('UPDATE orders SET o.o_fulfilment = %s WHERE o.o_orderKey = %s', ('processed', order[0]))
+            cursor.execute('UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s', ('processed', order[0]))
 
             ### check stock and pack
             while True:
@@ -556,8 +571,12 @@ def amzWithUPS():
                 ups_socket.close()
 
 
-def main():
-    # ### connect to UPS and get worldId
+# def main():
+
+
+
+if __name__ == '__main__':
+        # ### connect to UPS and get worldId
     # ups = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # ups.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # ups.connect((UpsHost,UpsPort))
@@ -582,8 +601,8 @@ def main():
     # Test connect world
     connect.worldid = 1
     # connect = amazon_pb.AConnect()
-    for warehouse in warehouses:
-        connect.initwh.add(id=warehouse['id'], x=warehouse['x'], y=warehouse['y'])
+    # for warehouse in warehouses:
+    #     connect.initwh.add(id=warehouse['id'], x=warehouse['x'], y=warehouse['y'])
     ### Test create a new world (new_world_id is None -- unconnected else connected)
     new_world_id = connect_world(amz, connect)
     if new_world_id:
@@ -602,7 +621,3 @@ def main():
         for thread in threads:
             thread.join()
     conn.close()   
-
-
-if __name__ == '__main__':
-    main()

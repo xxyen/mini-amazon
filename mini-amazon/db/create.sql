@@ -103,7 +103,7 @@ create table products
     p_category    productCategory not null,
     p_productName varchar(255)    not null,
     p_stock      integer check (p_stock >= 0)    not null,
-    p_description     text        null,
+    p_description     varchar(50)        null,
     p_image           text        null,
     p_price     decimal(12, 2) check (p_price >= 0)   not null
 );
