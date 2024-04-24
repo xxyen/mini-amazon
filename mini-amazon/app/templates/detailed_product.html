@@ -252,6 +252,7 @@ hr {
                     <ul>
                         <li><strong>Category:</strong> {{ product.category }}</li>
                         <li><strong>Description:</strong> {{ product.description }}</li>
+                        <p>Current User ID: {{ current_user.get_id() }}</p>
                     </ul>
                 </div>                
             </div>
@@ -342,61 +343,59 @@ hr {
     
             <h2 class="text-dark text-center my-1 py-3">Customer reviews</h2>
             <br> <!--empty space-->
-            <div class="row">
-                {% if feedbacks %}
-    
-                {% for feedback in feedbacks %}
-                {% if feedback.uid != current_user.id %}
-                <div class="col-md-4">
-                    <div class="card mb-4" style="height: 300px;">
-                        <div class="card-body d-flex flex-column">
-                            <div class="mb-3" style="overflow-y: auto; max-height: 200px;">
-                                <p class="card-text">
-                                    Date: {{ feedback.date }}<br>
-                                    Product: {{ feedback.productName }}<br>
-                                    User: {{ feedback.firstname }} {{ feedback.lastname }}<br>
-                                    Score:
-                                    <span class="stars">
-                                        {% set score = feedback.score | float %}
-                                        {% set fullStars = score | int %}
-                                        {% set hasHalfStar = score % 1 >= 0.5 %}
-                                        {% for i in range(fullStars) %}
-                                        <i class="fas fa-star text-warning"></i>
-                                        {% endfor %}
-                                        {% if hasHalfStar %}
-                                        <i class="fas fa-star-half-alt text-warning"></i>
+            <div class="container my-4 border text-dark">
+                <div class="row">
+                    {% if feedbacks %}
+        
+                    {% for feedback in feedbacks %}
+                    <div class="col-md-4">
+                        <div class="card mb-4" style="height: 500px;">
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-3" style="overflow-y: auto; max-height: 500px;">
+                                    <p class="card-text">
+                                        Date: {{ feedback.date }}<br>
+                                        Product: {{ feedback.productName }}<br>
+                                        Seller: Amazon<br>
+                                        Score:
+                                        <span class="stars">
+                                            {% set score = feedback.score | float %}
+                                            {% set fullStars = score | int %}
+                                            {% set hasHalfStar = score % 1 >= 0.5 %}
+                                            {% for i in range(fullStars) %}
+                                            <i class="fas fa-star text-warning"></i>
+                                            {% endfor %}
+                                            {% if hasHalfStar %}
+                                            <i class="fas fa-star-half-alt text-warning"></i>
+                                            {% endif %}
+                                            {% for i in range(fullStars + hasHalfStar, 5) %}
+                                            <i class="far fa-star text-warning"></i>
+                                            {% endfor %}
+                                        </span>
+                                        ({{ feedback.score }})<br>
+        
+                                        Content:
+                                    </p>
+                                    <div class="card p-2">
+                                        <p class="card-text">{{ feedback.content }}</p>
+                                        {% if feedback.image %}
+                                        <img src="{{ feedback.image }}" alt="Feedback Image"
+                                            class="card-img-top mx-auto d-block" style="width: 60%; height: auto;">
                                         {% endif %}
-                                        {% for i in range(fullStars + hasHalfStar, 5) %}
-                                        <i class="far fa-star text-warning"></i>
-                                        {% endfor %}
-                                    </span>
-                                    ({{ feedback.score }})<br>
-    
-                                    Content:
-                                </p>
-                                <div class="card p-2">
-                                    <p class="card-text">{{ feedback.content }}</p>
-                                    {% if feedback.image %}
-                                    <img src="{{ feedback.image }}" alt="Feedback Image"
-                                        class="card-img-top mx-auto d-block" style="width: 60%; height: auto;">
-                                    {% endif %}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="mt-auto">
-                                <a href=" " class="btn btn-primary mx-auto d-block">Details</a>
+
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
+        
+                    {% else %}
+                    <div class="col">
+                        <p class="text-center">No feedbacks found</p>
+                    </div>
+                    {% endif %}
+        
                 </div>
-                {% endif %}
-                {% endfor %}
-    
-                {% else %}
-                <div class="col">
-                    <p class="text-center">No feedbacks found</p>
-                </div>
-                {% endif %}
-    
             </div>
         </div>
     </div>
@@ -404,17 +403,12 @@ hr {
 </html>
 <script>
 document.getElementById('quantity').addEventListener('input', function() {
-    var quantity = this.value;  // Get the current value of the input field
+    var quantity = this.value || '1';  
     var form = document.getElementById('add-to-cart-form');
     // Update the form's action attribute dynamically based on the current quantity
-    var baseUrl = "{{ url_for('products.add_to_cart', user_id=current_user.id, pid=product.pid, quantity='1') }}";
+    var baseUrl = "{{ url_for('products.add_to_cart', user_id=current_user.get_id(), pid=product.pid, quantity='20011222') }}";
+    form.action = baseUrl.replace('20011222', encodeURIComponent(quantity));
 
-    // Update the form's action attribute only if quantity is not '1'
-    if (quantity !== '1') {
-        form.action = baseUrl.replace('1', quantity);
-    } else {
-        form.action = baseUrl;
-    }
 });
 </script>
 <!-- sript -->

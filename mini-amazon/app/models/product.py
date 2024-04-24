@@ -46,7 +46,7 @@ class Product:
             SELECT p.p_pid, p.p_productname,p.p_category,p.p_stock, p.p_price, p.p_description, p.p_image, 
                                COALESCE(AVG(fp.fp_score),0) AS avgReviewRating, COUNT(fp.fp_pid) AS totalSale
             FROM products p
-            JOIN feedbackProduct fp ON p.p_pid = fp.fp_pid
+            LEFT JOIN feedbackProduct fp ON p.p_pid = fp.fp_pid
             WHERE p.p_pid = :pid
             GROUP BY p.p_pid 
             ''', pid=pid)
@@ -71,8 +71,16 @@ class Product:
         SELECT p.p_pid, p.p_productname,p.p_category,p.p_stock, p.p_price, p.p_description, p.p_image, 
                                COALESCE(AVG(fp.fp_score),0) AS avgReviewRating, COUNT(fp.fp_pid) AS totalSale
         FROM products p
-        JOIN feedbackProduct fp ON p.p_pid = fp.fp_pid
+        LEFT JOIN  feedbackProduct fp ON p.p_pid = fp.fp_pid
         WHERE POSITION(LOWER(:k) in LOWER(p_productname)) > 0
+        GROUP BY 
+        p.p_pid, 
+        p.p_productname,
+        p.p_category,
+        p.p_stock, 
+        p.p_price, 
+        p.p_description, 
+        p.p_image
         '''
         
         if s == 'price-des-rank':
@@ -93,7 +101,7 @@ class Product:
             SELECT p.p_pid, p.p_productname,p.p_category,p.p_stock, p.p_price, p.p_description, p.p_image, 
                     COALESCE(AVG(fp.fp_score),0) AS avgReviewRating, COUNT(fp.fp_pid) AS totalSale
             FROM products p
-            JOIN feedbackProduct fp ON p.p_pid = fp.fp_pid
+            LEFT JOIN feedbackProduct fp ON p.p_pid = fp.fp_pid
             WHERE p.p_pid = :pid
             GROUP BY p.p_pid 
             ''',pid=pid)

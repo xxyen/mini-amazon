@@ -36,16 +36,16 @@ def product_detail(product_id):
         product = Product.get_product_by_sid_pid(product_id)
         # seller = User.get_by_uid(seller_id)
         feedbacks = FeedbackToProduct.get_by_product(product_id)
-        
-        if current_user.is_authenticated:
-            for feedback in feedbacks:
-                if feedback.uid == current_user.id:
-                    if feedback.image:
-                        image_base64 = feedback.image
-                    else:
-                        image_base64 = None
-                    form = FeedbackForm(score=feedback.score, content=feedback.content, image=image_base64)
-                    break
+        print(feedbacks)
+        # if current_user.is_authenticated:
+        #     for feedback in feedbacks:
+        #         if feedback.uid == current_user.id:
+        #             if feedback.image:
+        #                 image_base64 = feedback.image
+        #             else:
+        #                 image_base64 = None
+        #             form = FeedbackForm(score=feedback.score, content=feedback.content, image=image_base64)
+        #             break
         return render_template('detailed_product.html', form=form, product=product, feedbacks=feedbacks)
 
 @bp.route('/items/<int:product_id>/feedbackSubmit', methods=['POST'])
@@ -54,21 +54,21 @@ def review_submit(product_id):
     if form.validate_on_submit():
         product = Product.get_product_by_sid_pid(product_id)
         if product is None:
-            return jsonify({"error": "Invalid product"}), 400
+            return redirect(url_for('products.show_detailed_product', productId=product_id))
         if not current_user.is_authenticated:
-            return jsonify({"error": "You are not authorized to submit feedback"}), 401
+            return redirect(url_for('products.show_detailed_product', productId=product_id))
         
         image = None
         if form.image.data:
             image = form.image.data
         
         if not FeedbackToProduct.insert_or_update(product_id, current_user.id, form.content.data, form.score.data, image):
-            return jsonify({"error": "Failed to submit feedback"}), 500
+            return redirect(url_for('products.show_detailed_product', productId=product_id))
         # Product.update_avg_review_rating(seller_id, product_id)
-        return jsonify({"message": "Feedback submitted successfully"}), 200
+        return redirect(url_for('products.show_detailed_product', productId=product_id))
     else:
         print(form.errors)
-        return jsonify({"error": "Invalid form data"}), 400
+        return redirect(url_for('products.show_detailed_product', productId=product_id))
     
 @bp.route('/items/<int:product_id>/feedbackDelete', methods=['DELETE'])
 def review_delete(product_id):
@@ -86,22 +86,22 @@ def review_delete(product_id):
 @bp.route('/product/<int:productId>')
 def show_detailed_product(productId):
     product = Product.get_single_product(productId)
-    # similar_products = Product.get(productId)
+    # similar_products = Product.get(productId)s
     if request.method == 'GET':
         form = FeedbackForm()
-        product = Product.get_product_by_sid_pid(productId)
+        product = Product.get_single_product(productId)
         # seller = User.get_by_uid(sellerId)
         feedbacks = FeedbackToProduct.get_by_product(productId)
-        
-        if current_user.is_authenticated:
-            for feedback in feedbacks:
-                if feedback.uid == current_user.id:
-                    if feedback.image:
-                        image_base64 = feedback.image
-                    else:
-                        image_base64 = None
-                    form = FeedbackForm(score=feedback.score, content=feedback.content, image=image_base64)
-                    break
+        print(feedbacks)
+        # if current_user.is_authenticated:
+        #     for feedback in feedbacks:
+        #         if feedback.uid == current_user.id:
+        #             if feedback.image:
+        #                 image_base64 = feedback.image
+        #             else:
+        #                 image_base64 = None
+        #             form = FeedbackForm(score=feedback.score, content=feedback.content, image=image_base64)
+        #             break
       
     return render_template('detailed_product.html', form=form,product=product, feedbacks=feedbacks)
 

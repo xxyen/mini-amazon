@@ -85,10 +85,13 @@ class Cart:
     
     @staticmethod
     def add_to_cart(uid, pid, quantity):
+        print(quantity)
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(current_time)
         print("--------------result-----------------------")
-        result = app.db.execute('''
+        print(uid)
+        result = app.db.execute(
+            '''
             UPDATE carts
             SET c_quantity = c_quantity + :quantity, c_date = :current_time, c_status = :c_status
             WHERE c_uid = :uid AND c_pid = :pid
@@ -97,8 +100,7 @@ class Cart:
             pid=pid,
             current_time=current_time,
             c_status=False,
-            quantity=quantity)
-        print(result)
+            quantity=quantity) 
         if not result:
             print(111111111111111111111111111111111111111)
             app.db.execute('''
@@ -110,5 +112,3 @@ class Cart:
                 current_time=current_time,
                 c_status=False,
                 quantity=quantity)
-        
-        

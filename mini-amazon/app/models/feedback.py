@@ -19,15 +19,15 @@ class FeedbackToProduct:
         # names represent the sellers
         query = '''
             SELECT fp_pid,  fp_uid, fp_date, fp_content, fp_score, fp_image, u_firstname, u_lastname, u_image, p_productName
-            FROM feedbackProduct, Products, Users
-            WHERE fp_uid = :uid AND fp_pid = p_pid 
+            FROM feedbackProduct
+            INNER JOIN Products ON fp_pid = p_pid
+            INNER JOIN Users ON fp_uid = u_uid
+            WHERE fp_uid = :uid 
             ORDER BY fp_date DESC
+            LIMIT :limit
         '''
-        if limit > 0:
-            query += ' LIMIT :limit'
-            rows = app.db.execute(query, uid=uid, limit=limit)
-        else:
-            rows = app.db.execute(query, uid=uid)
+
+        rows = app.db.execute(query, uid=uid, limit=limit)
     
         return [FeedbackToProduct(*row) for row in rows]
 
