@@ -357,9 +357,11 @@ def amzWithWorld():
             findBestWarehouse(order[0])
             index_order = order[0]
             print(index_order)
-            sql = "SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number FROM lineItems li JOIN products p ON p.p_pid = li.li_pid JOIN orders o ON o.o_orderKey = li.li_orderKey WHERE o.o_orderKey=" + str(index_order) + ";"
-            print(sql)
-            cursor.execute(sql)
+            # sql = "SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number FROM lineItems li JOIN products p ON p.p_pid = li.li_pid JOIN orders o ON o.o_orderKey = li.li_orderKey WHERE o.o_orderKey=" + str(index_order) + ";"
+            # print(sql)
+            # cursor.execute(sql)
+            cursor.execute( "SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number FROM lineItems li JOIN products p ON p.p_pid = li.li_pid JOIN orders o ON o.o_orderKey = li.li_orderKey WHERE o.o_orderKey=%s", (index_order,))
+
             results = cursor.fetchall()
             print(results)
             descriptions = []
@@ -376,8 +378,8 @@ def amzWithWorld():
 
             ### buy
             purchase(warehouse_id,productIds,descriptions,numbers)
-            sql = f"UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = {str(order[0])};"
-            cursor.execute(sql)
+            # sql = f"UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = {str(order[0])};"
+            cursor.execute("UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = %s", (order[0],))
 
             ### check stock and pack
             while True:
