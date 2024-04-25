@@ -447,20 +447,23 @@ def request_truck_to_ups(package_id):
     request_truck.package_id = package_id
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT warehouse_id, ups_name, o_address_x, o_address_y FROM orders WHERE o_orderKey = %s", (package_id,))
+        cursor.execute("SELECT warehouse_id, o_address_x, o_address_y FROM orders WHERE o_orderKey = %s", (package_id,))
         row = cursor.fetchone()
+        print(row)
         request_truck.warehouse_id = row[0]
-        request_truck.ups_user = row[1]
-        request_truck.dest_x = row[2]
-        request_truck.dest_y = row[3]
+        request_truck.dest_x = row[1]
+        request_truck.dest_y = row[2]
 
         cursor.execute("SELECT w_x, w_y FROM warehouse WHERE w_wid = %s", (request_truck.warehouse_id,))
+        
         row = cursor.fetchone()
+        print(row)
         request_truck.warehouse_x = row[0]
-        request_truck.warehousr_y = row[1]
+        request_truck.warehouse_y = row[1]
 
         cursor.execute("SELECT li_pid FROM lineItems WHERE li_orderKey = %s", (package_id,))
         rows = cursor.fetchAll()
+        print(rows)
         for row in rows:
             cursor.execute("SELECT p_productName, p_stock FROM products WHERE p_pid= %s", (row[0],))
             row_product = cursor.fetchone()
