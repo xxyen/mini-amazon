@@ -45,7 +45,7 @@ CREATE TABLE warehouse
     w_y  int default 0
 );
 
-CREATE TYPE fulfilmentStatus AS ENUM ('processing','packing','packed','loading','loaded','delivering', 'delivered','processed');
+-- CREATE TYPE fulfilmentStatus AS ENUM ('processing','packing','packed','loading','loaded','delivering', 'delivered','processed');
 
 
 CREATE TABLE orders
@@ -63,7 +63,8 @@ CREATE TABLE orders
     ups_name    VARCHAR(64)  NULL,
     truck_id    INTEGER NULL,
     warehouse_id  INTEGER NULL,
-    o_fulfilment fulfilmentStatus NULL,  -- allowing null values
+    -- o_fulfilment fulfilmentStatus NULL,  -- allowing null values
+    o_fulfilment VARCHAR(50) NULL,  -- allowing null values
     o_address_x int default 0 not null, -- default coordinate x
     o_address_y int default 0 not null,  -- default coordinate y
     FOREIGN KEY (o_uid) REFERENCES users (u_uid),

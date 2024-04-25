@@ -302,17 +302,22 @@ def purchase(whnum,productIds,descriptions,numbers):
     
 ### check the inventory
 def checkInventory(warehouse_id,productIds,numbers):
-    cursor = conn.cursor()
+    
     for index in range(len(productIds)):
-        sql = f"SELECT inv_qty FROM inventories WHERE inv_pid = {productIds[index]} AND inv_wid = {warehouse_id};"
-        cursor.execute(sql)
-        print(cursor.fetchone())
+        cursor = conn.cursor()
+        # sql = f"SELECT inv_qty FROM inventories WHERE inv_pid={str(productIds[index])} AND inv_wid={str(warehouse_id)};"
+        # cursor.execute(sql)
+        print(productIds[index])
+        print(warehouse_id)
+        cursor.execute("SELECT inv_qty FROM inventories WHERE inv_pid=%s AND inv_wid=%s;", (productIds[index], warehouse_id))
+        # print(cursor.fetchone())
         inventory = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
         #### under stock
         if inventory < numbers[index]:
             return False
-    
-    cursor.close()
+        
     return True
 
 ### packing
@@ -334,7 +339,7 @@ def pack(warehouse_id,productIds,numbers,descriptions,oid):
         inventory = cursor.fetchone()[0]
         cursor.execute('UPDATE inventories SET inv_qty = %s WHERE inv_pid = %s AND inv_wid = %s',
                     (inventory-numbers[index], productIds[index], warehouse_id))
-        conn.commit()
+        # conn.commit()
     
     send_message(world_socket,msg_pack)
     cursor.execute(
@@ -342,7 +347,7 @@ def pack(warehouse_id,productIds,numbers,descriptions,oid):
             ('packing', oid)
         )
     conn.commit()
-    conn.close()
+    cursor.close()
 
 
 def amzWithWorld():
@@ -350,6 +355,7 @@ def amzWithWorld():
     while True:
         cursor = conn.cursor()
         cursor.execute("SELECT o_orderKey FROM orders WHERE o_fulfilment = 'processing';")
+        time.sleep(5)
         orders = cursor.fetchall()
         print(orders)
         for order in orders:
@@ -360,7 +366,7 @@ def amzWithWorld():
             # sql = "SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number FROM lineItems li JOIN products p ON p.p_pid = li.li_pid JOIN orders o ON o.o_orderKey = li.li_orderKey WHERE o.o_orderKey=" + str(index_order) + ";"
             # print(sql)
             # cursor.execute(sql)
-            cursor.execute( "SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number FROM lineItems li JOIN products p ON p.p_pid = li.li_pid JOIN orders o ON o.o_orderKey = li.li_orderKey WHERE o.o_orderKey=%s", (index_order,))
+            cursor.execute( "SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number FROM lineItems li INNER JOIN products p ON p.p_pid = li.li_pid INNER JOIN orders o ON o.o_orderKey = li.li_orderKey WHERE o.o_orderKey=%s", (index_order,))
 
             results = cursor.fetchall()
             print(results)
@@ -378,14 +384,18 @@ def amzWithWorld():
 
             ### buy
             purchase(warehouse_id,productIds,descriptions,numbers)
-            # sql = f"UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = {str(order[0])};"
-            cursor.execute("UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = %s", (order[0],))
+            sql = f"UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = 1;"
+            print(sql)
+            cursor.execute(sql)
+            # conn.commit()
+            # cursor.execute("UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = %s", (order[0],)) 
 
             ### check stock and pack
             while True:
                 if checkInventory(warehouse_id,productIds,numbers):
                     pack(warehouse_id,productIds,numbers,descriptions,order[0])
                     break
+                time.sleep(1)
 
         conn.commit()
         cursor.close()        
@@ -467,7 +477,7 @@ def request_truck_to_ups(package_id):
     finally:
         cursor.close()
     
-    command.request_truck.append(request_truck)
+    command.truck_req = request_truck
     send_message(ups_socket, command)
 
 # Send load_package msg to UPS after received loaded msg from world
@@ -492,7 +502,7 @@ def load_package_to_ups(package_id, truck_id):
     finally:
         cursor.close()
     
-    command.load_pack.append(loaded)
+    command.load_pack = loaded
     send_message(ups_socket, command)
 
 # Send request_destination_change msg to UPS
@@ -503,7 +513,7 @@ def request_destination_chagne_to_ups(package_id, new_x, new_y):
     dest_ch.package_id = package_id
     dest_ch.new_dest_x = new_x
     dest_ch.new_dest_y = new_y
-    command.dest_ch.appned(dest_ch)
+    command.dest_ch = dest_ch
     send_message(ups_socket, command)
 
 
@@ -614,6 +624,7 @@ if __name__ == '__main__':
     # connect.worldid = worldId
     # Test connect world
     connect.worldid = 1
+    
     # connect = amazon_pb.AConnect()
     # for warehouse in warehouses:
     #     connect.initwh.add(id=warehouse['id'], x=warehouse['x'], y=warehouse['y'])
