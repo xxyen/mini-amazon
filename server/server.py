@@ -448,22 +448,22 @@ def request_truck_to_ups(package_id):
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT warehouse_id, ups_name, o_address_x, o_address_y FROM orders WHERE o_orderKey = %s", (package_id,))
-        row = cursor.fetchOne()
+        row = cursor.fetchone()
         request_truck.warehouse_id = row[0]
         request_truck.ups_user = row[1]
         request_truck.dest_x = row[2]
         request_truck.dest_y = row[3]
 
         cursor.execute("SELECT w_x, w_y FROM warehouse WHERE w_wid = %s", (request_truck.warehouse_id,))
-        row = cursor.fetchOne()
+        row = cursor.fetchone()
         request_truck.warehouse_x = row[0]
         request_truck.warehousr_y = row[1]
 
         cursor.execute("SELECT li_pid FROM lineItems WHERE li_orderKey = %s", (package_id,))
         rows = cursor.fetchAll()
         for row in rows:
-            cursor.execute("SELECT p_productName, p_stock FROM products WHERE w_wid = %s", (row[0],))
-            row_product = cursor.fetchOne()
+            cursor.execute("SELECT p_productName, p_stock FROM products WHERE p_pid= %s", (row[0],))
+            row_product = cursor.fetchone()
             item = amz_ups.Item()
             item.name = row_product[0]
             item.qunatity = row_product[1]
@@ -477,7 +477,8 @@ def request_truck_to_ups(package_id):
     finally:
         cursor.close()
     
-    command.truck_req = request_truck
+    command.truck_req.CopyFrom(request_truck)
+    print(command.truck_req)
     send_message(ups_socket, command)
 
 # Send load_package msg to UPS after received loaded msg from world
@@ -490,7 +491,7 @@ def load_package_to_ups(package_id, truck_id):
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT o_address_x, o_address_y FROM orders WHERE o_orderKey = %s", (package_id))
-        row = cursor.fetchOne()
+        row = cursor.fetchone()
         loaded.dest_x = row[0]
         loaded.dest_y = row[1]
 
@@ -502,7 +503,7 @@ def load_package_to_ups(package_id, truck_id):
     finally:
         cursor.close()
     
-    command.load_pack = loaded
+    command.load_pack.CopyFrom(loaded)
     send_message(ups_socket, command)
 
 # Send request_destination_change msg to UPS
@@ -513,7 +514,7 @@ def request_destination_chagne_to_ups(package_id, new_x, new_y):
     dest_ch.package_id = package_id
     dest_ch.new_dest_x = new_x
     dest_ch.new_dest_y = new_y
-    command.dest_ch = dest_ch
+    command.dest_ch.CopyFrom(dest_ch)
     send_message(ups_socket, command)
 
 
