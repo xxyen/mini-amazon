@@ -93,16 +93,17 @@ def connect_world(sock, connect):
 def initWarehouse():
     cursor = conn.cursor()
     cursor.execute("TRUNCATE TABLE inventories, warehouse;")
-    # cursor.execute("ALTER SEQUENCE warehouse_w_wid_seq RESTART WITH 1;")
-    # cursor.execute("ALTER SEQUENCE inventories_inv_invid_seq RESTART WITH 1;")
+    cursor.execute("ALTER SEQUENCE warehouse_w_wid_seq RESTART WITH 1;")
+    cursor.execute("ALTER SEQUENCE inventories_inv_invid_seq RESTART WITH 1;")
     conn.commit()
     warehouse_locations = [(10, 10), (50, 50), (100, 100)]
     warehouses = []
     for x, y in warehouse_locations:
-        cursor.execute(
-            "INSERT INTO warehouse (w_x, w_y) VALUES (%s, %s) RETURNING w_wid;", (x, y))
+        sql = f"INSERT INTO warehouse (w_x, w_y) VALUES ({x}, {y}) RETURNING w_wid;"
+        cursor.execute(sql)
         warehouse_id = cursor.fetchone()[0]
         warehouses.append({'id': warehouse_id, 'x': x, 'y': y})
+        print(f"warehouse id:{warehouse_id} x:{x}")
     
     conn.commit()
     cursor.close()
@@ -118,16 +119,23 @@ def update_stock(purchase):
             productId = product.id
             count = product.count
             
-            cursor.execute("SELECT inv_qty FROM inventories WHERE inv_pid = %s AND inv_wid = %s;", (productId, whnum))
+            sql = f"SELECT inv_qty FROM inventories WHERE inv_pid = {str(productId)} AND inv_wid = {str(whnum)};"
+            cursor.execute(sql)
             row = cursor.fetchone()
 
             if row is None:
-                cursor.execute("INSERT INTO inventories (inv_wid, inv_pid, inv_qty) VALUES (%s, %s, %s);", 
-                               (whnum, productId, count))
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print(whnum)
+                print(productId)
+                print(count)
+                sql = f"INSERT INTO inventories (inv_wid, inv_pid, inv_qty) VALUES ({str(whnum)}, {str(productId)}, {str(count)});"
+                # cursor.execute("INSERT INTO inventories (inv_wid, inv_pid, inv_qty) VALUES (%s, %s, %s);", (whnum, productId, count))
+                print(sql)
+                cursor.execute(sql)
             else:
                 current_inventory = row[0]
                 new_inventory = current_inventory + count
-                cursor.execute("UPDATE inventories SET inv_qty = %s WHERE inv_pid = %s AND inv_wid = %s;",
+                cursor.execute("UPDATE inventories SET inv_qty = %s WHERE inv_pid = %s AND inv_wid = %s",
                                (new_inventory, productId, whnum))
 
         conn.commit()
@@ -142,7 +150,7 @@ def confirmPackedAndAskTruck(pack):
         orderId = pack.shipid
         cursor = conn.cursor()
         cursor.execute(
-            'UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s',
+            "UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s",
             ('packed', orderId)
         )
         conn.commit()
@@ -158,11 +166,11 @@ def confirmLoadedAndAskDeliver(load):
         orderId = load.shipid
         cursor = conn.cursor()
         cursor.execute(
-            'UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s',
+            "UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s",
             ('loaded', orderId)
         )
         conn.commit()
-        cursor.execute("SELECT truck_id FROM orders WHERE o_orderKey = %s;",(orderId))
+        cursor.execute("SELECT truck_id FROM orders WHERE o_orderKey = %s",(orderId))
         truckId = cursor.fetchone()[0]
     except Exception as e:
         conn.rollback() 
@@ -175,6 +183,7 @@ def confirmLoadedAndAskDeliver(load):
 def worldWithAmz():
     while True:
         response = receive_message(world_socket,amazon_pb.AResponses)
+        print(response)
         for error in response.error:
             ack_msg = amazon_pb.ACommands()
             ack_msg.acks.append(error.seqnum)
@@ -247,8 +256,7 @@ def findBestWarehouse(orderId):
                 raise ValueError("No warehouse available for assignment.")
 
             # Assign the closest warehouse to the package
-            cur.execute(
-                "UPDATE orders SET warehouse_id = %s WHERE o_orderKey = %s;",
+            cur.execute("UPDATE orders SET warehouse_id = %s WHERE o_orderKey = %s;",
                 (chosen_warehouse_id, orderId)
             )
             conn.commit()
@@ -273,6 +281,8 @@ def purchase(whnum,productIds,descriptions,numbers):
     msg_purchase = amazon_pb.ACommands()
     buy = msg_purchase.buy.add()
     buy.whnum = whnum
+    print("purchase")
+    print(whnum)
     for index in range(len(productIds)):
         product = buy.things.add()
         product.id = productIds[index]
@@ -280,6 +290,7 @@ def purchase(whnum,productIds,descriptions,numbers):
         product.count = numbers[index]
     buy.seqnum = seqnumAdd()
     send_message(world_socket,msg_purchase)
+    print(msg_purchase)
     #### validate ack
     while True:
         time.sleep(WAIT_FOR_ACK)
@@ -293,7 +304,8 @@ def purchase(whnum,productIds,descriptions,numbers):
 def checkInventory(warehouse_id,productIds,numbers):
     cursor = conn.cursor()
     for index in range(len(productIds)):
-        cursor.execute("SELECT inv_qty FROM inventories WHERE inv_pid = %s AND inv_wid = %s;",(warehouse_id,productIds[index]))
+        sql = f"SELECT inv_qty FROM inventories WHERE inv_pid = {productIds[index]} AND inv_wid = {warehouse_id};"
+        cursor.execute(sql)
         print(cursor.fetchone())
         inventory = cursor.fetchone()[0]
         #### under stock
@@ -318,12 +330,9 @@ def pack(warehouse_id,productIds,numbers,descriptions,oid):
         product.description = descriptions[index]
         product.count = numbers[index]
         #### reduce stock
-        cursor.execute("""
-                SELECT inv_qty FROM inventories
-                WHERE inv_pid = %s AND inv_wid = %s;
-            """, (productIds[index], warehouse_id))
+        cursor.execute("SELECT inv_qty FROM inventories WHERE inv_pid = %s AND inv_wid = %s", (productIds[index], warehouse_id))
         inventory = cursor.fetchone()[0]
-        cursor.execute('UPDATE inventories SET inv_qty = %s WHERE inv_pid = %s AND inv_wid = %s;',
+        cursor.execute('UPDATE inventories SET inv_qty = %s WHERE inv_pid = %s AND inv_wid = %s',
                     (inventory-numbers[index], productIds[index], warehouse_id))
         conn.commit()
     
@@ -337,27 +346,29 @@ def pack(warehouse_id,productIds,numbers,descriptions,oid):
 
 
 def amzWithWorld():
+    print("amz with world")
     while True:
         cursor = conn.cursor()
         cursor.execute("SELECT o_orderKey FROM orders WHERE o_fulfilment = 'processing';")
         orders = cursor.fetchall()
+        print(orders)
         for order in orders:
+            print(order[0])
             findBestWarehouse(order[0])
-            cursor.execute("""
-                SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number
-                FROM lineItems li
-                JOIN products p ON p.p_pid = li.li_pid
-                JOIN orders o ON o.o_orderKey = li.li_orderKey
-                WHERE o.o_orderKey = %s;
-            """, (order[0],))
+            index_order = order[0]
+            print(index_order)
+            sql = "SELECT o.warehouse_id, p.p_pid, p.p_description, li.li_number FROM lineItems li JOIN products p ON p.p_pid = li.li_pid JOIN orders o ON o.o_orderKey = li.li_orderKey WHERE o.o_orderKey=" + str(index_order) + ";"
+            print(sql)
+            cursor.execute(sql)
             results = cursor.fetchall()
+            print(results)
             descriptions = []
             numbers = []
             productIds = []
-            warehouse_id = 0
-            for index, row in enumerate(results):
-                if index == 0:
-                    warehouse_id = row[0]
+            warehouse_id = results[0][0]
+            for row in results:
+                # if index == 0:
+                #     warehouse_id = row[0]
                 # Append data to lists
                 productIds.append(row[1])
                 descriptions.append(row[2])
@@ -365,7 +376,8 @@ def amzWithWorld():
 
             ### buy
             purchase(warehouse_id,productIds,descriptions,numbers)
-            cursor.execute('UPDATE orders SET o_fulfilment = %s WHERE o_orderKey = %s', ('processed', order[0]))
+            sql = f"UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = {str(order[0])};"
+            cursor.execute(sql)
 
             ### check stock and pack
             while True:
@@ -387,7 +399,7 @@ def toLoad(msg_truck_arrive):
     send_message(world_socket,msg_toload)
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_fulfilment = 'loading' WHERE o_orderKey = %s;", (msg_truck_arrive.package_id))
+        cursor.execute("UPDATE orders SET o_fulfilment = 'loading' WHERE o_orderKey = %s", (msg_truck_arrive.package_id,))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -405,7 +417,7 @@ def handle_truck_arrive(msg_truck_arrive):
     # Add truck_id to the order/package
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET truck_id = %s WHERE o_orderKey = %s;", (truck_id, package_id))
+        cursor.execute("UPDATE orders SET truck_id = %s WHERE o_orderKey = %s", (truck_id, package_id))
         conn.commit()
         # Send msg to warehouse to load the pacakge
         # TBD
@@ -423,22 +435,22 @@ def request_truck_to_ups(package_id):
     request_truck.package_id = package_id
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT warehouse_id, ups_name, o_address_x, o_address_y FROM orders WHERE o_orderKey = %s;", (package_id))
+        cursor.execute("SELECT warehouse_id, ups_name, o_address_x, o_address_y FROM orders WHERE o_orderKey = %s", (package_id,))
         row = cursor.fetchOne()
         request_truck.warehouse_id = row[0]
         request_truck.ups_user = row[1]
         request_truck.dest_x = row[2]
         request_truck.dest_y = row[3]
 
-        cursor.execute("SELECT w_x, w_y FROM warehouse WHERE w_wid = %s;", (request_truck.warehouse_id))
+        cursor.execute("SELECT w_x, w_y FROM warehouse WHERE w_wid = %s", (request_truck.warehouse_id,))
         row = cursor.fetchOne()
         request_truck.warehouse_x = row[0]
         request_truck.warehousr_y = row[1]
 
-        cursor.execute("SELECT li_pid FROM lineItems WHERE li_orderKey = %s;", (package_id))
+        cursor.execute("SELECT li_pid FROM lineItems WHERE li_orderKey = %s", (package_id,))
         rows = cursor.fetchAll()
         for row in rows:
-            cursor.execute("SELECT p_productName, p_stock FROM products WHERE w_wid = %s;", (row[0]))
+            cursor.execute("SELECT p_productName, p_stock FROM products WHERE w_wid = %s", (row[0],))
             row_product = cursor.fetchOne()
             item = amz_ups.Item()
             item.name = row_product[0]
@@ -465,7 +477,7 @@ def load_package_to_ups(package_id, truck_id):
     loaded.truck_id = truck_id
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT o_address_x, o_address_y FROM orders WHERE o_orderKey = %s;", (package_id))
+        cursor.execute("SELECT o_address_x, o_address_y FROM orders WHERE o_orderKey = %s", (package_id))
         row = cursor.fetchOne()
         loaded.dest_x = row[0]
         loaded.dest_y = row[1]
@@ -498,7 +510,7 @@ def handle_start_deliver(msg_start_deliver):
     package_id = msg_start_deliver.package_id
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_fulfilment = 'delivering' WHERE o_orderKey = %s;", (package_id))
+        cursor.execute("UPDATE orders SET o_fulfilment = 'delivering' WHERE o_orderKey = %s", (package_id))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -511,7 +523,7 @@ def handle_delivered_package(msg_deliverd_package):
     package_id = msg_deliverd_package.package_id
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_fulfilment = 'delivered' WHERE o_orderKey = %s;", (package_id))
+        cursor.execute("UPDATE orders SET o_fulfilment = 'delivered' WHERE o_orderKey = %s", (package_id))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -526,7 +538,7 @@ def handle_res_dest_changed(msg_res_dest_changed):
     if(msg_res_dest_changed.success):
         cursor = conn.cursor()
         try:
-            cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE o_orderKey = %s;", (new_x,new_y, package_id))
+            cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE o_orderKey = %s", (new_x,new_y, package_id))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -540,7 +552,7 @@ def handle_dest_changed_from_ups(msg_dest_changed):
     new_y = msg_dest_changed.new_dest_y
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE o_orderKey = %s;", (new_x,new_y, package_id))
+        cursor.execute("UPDATE orders SET o_address_x = %s, o_address_y = %s WHERE o_orderKey = %s", (new_x,new_y, package_id))
         conn.commit()
     except Exception as e:
         conn.rollback()

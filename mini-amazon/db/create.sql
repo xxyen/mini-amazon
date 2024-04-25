@@ -9,6 +9,11 @@ DROP TABLE IF EXISTS products;
 
 DROP TYPE IF EXISTS fulfilmentStatus;
 DROP TYPE IF EXISTS productCategory;
+
+DROP TABLE IF EXISTS warehouse;
+DROP TABLE IF EXISTS ups;
+DROP TABLE IF EXISTS inventories;
+
 -- the order of dropping and creating are important, because of the foreign key constraints
 
 create table users
