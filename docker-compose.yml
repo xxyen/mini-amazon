@@ -6,12 +6,15 @@ services:
       environment:
         - POSTGRES_DB=amazon
         - POSTGRES_USER=postgres
-        - POSTGRES_PASSWORD=123456
+        - POSTGRES_PASSWORD=postgres
       expose:
         - "5432"
   web:
+      user: root
       build: ./mini-amazon
-      command: bash -c "poetry run ./install.sh && flask run"
+      # command: bash -c "./install.sh && flask run"
+      # command: bash -c "./install.sh"
+      command: bash -c "flask run"
       volumes:
         - ./mini-amazon:/code
       expose:
@@ -19,6 +22,7 @@ services:
       depends_on:
         - db
   amazon:
+      user: root
       build: ./server
       command: bash -c "python3 ./server.py"
       depends_on:

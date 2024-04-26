@@ -21,7 +21,7 @@ conn = psycopg2.connect(
     database='amazon',
     user='postgres',
     password='123456',
-    host='db',
+    host='localhost',
     port='5432'
 )
 ups_socket = 0
