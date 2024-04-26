@@ -23,6 +23,7 @@ def show_products():
     items = Product.search_and_sort(k, s)
     return render_template('items.html', items=items)
 
+
 class FeedbackForm(FlaskForm):
     score = DecimalField('Score', validators=[InputRequired(), NumberRange(min=0, max=5)], places=2)
     content = TextAreaField('Content', validators=[InputRequired(), Length(max=3000)])

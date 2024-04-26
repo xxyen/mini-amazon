@@ -139,7 +139,7 @@
                                                 <form action="{{ url_for('users.save_for_later', user_id=current_user.id, pid=cart.c_pid) }}" method="post">
                                                     <button type="submit" class="btn btn-secondary btn-sm">Save for Later</button>
                                                 </form>
-                                                <img src="{{cart.image if cart.img else 'https://m.media-amazon.com/images/I/81yGvW62D2L._AC_SY240_.jpg' }}" alt="" class="text-product img-fluid p-absolute image-dim">
+                                                <img src="{{cart.image }}" alt="" class="text-product img-fluid p-absolute image-dim">
                                                 <h3>{{ cart.productName }}</h3>
                                                 <p>Unit Price: {{ cart.c_price }}</p>
                                                 <form action="{{ url_for('users.change_quantity', user_id=current_user.id, pid=cart.c_pid) }}" method="post" class="quantity-form">
@@ -191,7 +191,7 @@
                                             <button type="submit" class="save-btn">Move to My Cart</button>
                                         </form>
                                         <img class="text-product img-fluid p-absolute image-dim"
-                                            src="{{cart.image if cart.img else 'https://m.media-amazon.com/images/I/81yGvW62D2L._AC_SY240_.jpg'}}" alt="">
+                                            src="{{cart.image }}" alt="">
                                         <h3>{{ cart.productName }}</h3>
                                         <p>Unit Price: {{ cart.c_price}}</p>
                                         <form action="{{ url_for('users.change_quantity', user_id=current_user.id, pid=cart.c_pid) }}" method="post" class="quantity-form">

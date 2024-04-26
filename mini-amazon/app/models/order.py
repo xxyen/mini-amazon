@@ -1,10 +1,9 @@
 from flask import current_app as app
 from datetime import datetime
-from .cart import Cart
 
 class Order:
-    def __init__(self, order_key, processingDate, uid, pid, category, product_name,number, amount,
-                 img,description,status,address_x,address_y,packingDate=None,packedDate=None,loadingDate=None,
+    def __init__(self, order_key, address_x,address_y,uid, pid, category, product_name,number, amount,
+                 img,description,status,processingDate,packingDate=None,packedDate=None,loadingDate=None,
                  loadedDate=None,deliveringDate=None,deliveredDate=None,upsName=None,truckId=None,warehouseId=None):
         self.order_key = order_key 
         self.address_x = address_x

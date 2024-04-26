@@ -16,6 +16,7 @@ def index():
     if current_user.is_authenticated:
     
         products = Product.get_all()
+        print(products)
     else:
         return redirect(url_for('users.login'))
 

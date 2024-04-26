@@ -192,21 +192,22 @@
                                     <h3>{{ order.product_name }}</h3>
                                     <p>
                                         <strong>
-                                            {% if orders[0].status == 'packing' %}
-                                            Packing - Your order is being packed from {{orders[0].packingDate}}.
+                                            {% if order.status == 'packing' %}
+                                            Packing - Your order is being packed.
+                                            {% elif orders[0].status == 'processed' %}
+                                            Processed - Your order is processed.
                                             {% elif orders[0].status == 'processing' %}
-                                            Processing - Your order is being prepared from {{orders[0].processingDate}}.
+                                            Processing - Your order is being prepared.
                                             {% elif orders[0].status == 'packed' %}
-                                            Packed - Your order is packed on {{orders[0].packedDate}}.
+                                            Packed - Your order is packed.
                                             {% elif orders[0].status == 'loading' %}
-                                            Loading - Your order is being loaded from {{orders[0].loadingDate}}.
+                                            Loading - Your order is being loaded.
                                             {% elif orders[0].status == 'loaded' %}
-                                            Loaded - Your order is loaded on {{orders[0].loadedDate}}.
+                                            Loaded - Your order is loaded.
                                             {% elif orders[0].status == 'delivering' %}
-                                            Delivering - Your order is being delivered from
-                                            {{orders[0].deliveringDate}}.
+                                            Delivering - Your order is being delivered.
                                             {% elif orders[0].status == 'delivered' %}
-                                            Delivered - Your order has arrived on {{ orders[0].deliveredDate}}.
+                                            Delivered - Your order has arrived.
                                             {% else %}
                                             Unknown - Please contact support.
                                             {% endif %}

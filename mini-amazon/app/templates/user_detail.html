@@ -156,7 +156,7 @@
 
                             {% for order in orders %}
                             {% if loop.index <= 5 %} <a
-                                href="{{ url_for('orders.getUserOrders',user_id=current_user.id) }}"
+                                href="{{ url_for('orders.getOrderDetail',user_id=current_user.id, order_id=order.order_key) }}"
                                 class="no-decoration" style="text-decoration: none; color: inherit;">
                                 <div class="sortable-moves" style="">
                                     <img class="text-product img-fluid p-absolute image-dim"

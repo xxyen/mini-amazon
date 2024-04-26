@@ -9,10 +9,10 @@ import psycopg2
 import math
 
 WAIT_FOR_ACK = 30
-WorldHost = "0.0.0.0"
+WorldHost = "152.3.65.88"
 WorldPort = 23456
-UpsHost = ""
-UpsPort = ""
+UpsHost = "vcm-39063.vm.duke.edu"
+UpsPort = 1234
 worldSeqnums = []
 worldAcks = []
 ### connect to db
@@ -163,6 +163,7 @@ def confirmPackedAndAskTruck(pack):
 
 def confirmLoadedAndAskDeliver(load):
     try:
+        print("confirmLoadedAndAskDeliver!!!!!")
         orderId = load.shipid
         cursor = conn.cursor()
         cursor.execute(
@@ -170,15 +171,20 @@ def confirmLoadedAndAskDeliver(load):
             ('loaded', orderId)
         )
         conn.commit()
-        cursor.execute("SELECT truck_id FROM orders WHERE o_orderKey = %s",(orderId))
-        truckId = cursor.fetchone()[0]
+        cursor.execute("SELECT truck_id FROM orders WHERE o_orderKey = %s",(orderId,))
+        result = cursor.fetchone()
+        
+        print(result)
+        if result is not None:
+            truckId = result[0]
+            load_package_to_ups(orderId, truckId)
+        else:
+            print("No truck_id found for order:", orderId)
     except Exception as e:
         conn.rollback() 
         print("An error occurred:", e)
     finally:
         cursor.close()  
-
-        load_package_to_ups(orderId,truckId)
         
 def worldWithAmz():
     while True:
@@ -355,7 +361,7 @@ def amzWithWorld():
     while True:
         cursor = conn.cursor()
         cursor.execute("SELECT o_orderKey FROM orders WHERE o_fulfilment = 'processing';")
-        time.sleep(5)
+        time.sleep(8)
         orders = cursor.fetchall()
         print(orders)
         for order in orders:
@@ -406,6 +412,8 @@ def toLoad(msg_truck_arrive):
     toLoad = msg_toload.load.add()
     toLoad.whnum = msg_truck_arrive.warehouse_id
     toLoad.truckid = msg_truck_arrive.truck_id
+    print("toLoad!!!!!!!")
+    print(toLoad.truckid)
     toLoad.shipid = msg_truck_arrive.package_id
     toLoad.seqnum = seqnumAdd()
     send_message(world_socket,msg_toload)
@@ -429,6 +437,8 @@ def handle_truck_arrive(msg_truck_arrive):
     # Add truck_id to the order/package
     cursor = conn.cursor()
     try:
+        print("handle_truck_arrive")
+        print(truck_id)
         cursor.execute("UPDATE orders SET truck_id = %s WHERE o_orderKey = %s", (truck_id, package_id))
         conn.commit()
         # Send msg to warehouse to load the pacakge
@@ -453,7 +463,7 @@ def request_truck_to_ups(package_id):
         request_truck.warehouse_id = row[0]
         request_truck.dest_x = row[1]
         request_truck.dest_y = row[2]
-
+        request_truck.ups_user = "123"
         cursor.execute("SELECT w_x, w_y FROM warehouse WHERE w_wid = %s", (request_truck.warehouse_id,))
         
         row = cursor.fetchone()
@@ -462,14 +472,14 @@ def request_truck_to_ups(package_id):
         request_truck.warehouse_y = row[1]
 
         cursor.execute("SELECT li_pid FROM lineItems WHERE li_orderKey = %s", (package_id,))
-        rows = cursor.fetchAll()
+        rows = cursor.fetchall()
         print(rows)
         for row in rows:
             cursor.execute("SELECT p_productName, p_stock FROM products WHERE p_pid= %s", (row[0],))
             row_product = cursor.fetchone()
             item = amz_ups.Item()
             item.name = row_product[0]
-            item.qunatity = row_product[1]
+            item.quantity = row_product[1]
             request_truck.items.append(item)
     
         conn.commit()
@@ -487,14 +497,17 @@ def request_truck_to_ups(package_id):
 # Send load_package msg to UPS after received loaded msg from world
 # Let the truck go
 def load_package_to_ups(package_id, truck_id):
+    print("load_package_to_ups")
     command = amz_ups.AUCommands()
     loaded = amz_ups.load_package()
     loaded.package_id = package_id
     loaded.truck_id = truck_id
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT o_address_x, o_address_y FROM orders WHERE o_orderKey = %s", (package_id))
+        cursor.execute("SELECT o_address_x, o_address_y FROM orders WHERE o_orderKey = %s", (package_id,))
+        
         row = cursor.fetchone()
+        print(row)
         loaded.dest_x = row[0]
         loaded.dest_y = row[1]
 
@@ -507,6 +520,7 @@ def load_package_to_ups(package_id, truck_id):
         cursor.close()
     
     command.load_pack.CopyFrom(loaded)
+    print(command)
     send_message(ups_socket, command)
 
 # Send request_destination_change msg to UPS
@@ -522,11 +536,13 @@ def request_destination_chagne_to_ups(package_id, new_x, new_y):
 
 
 # Change the package status to delivering
-def handle_start_deliver(msg_start_deliver):
-    package_id = msg_start_deliver.package_id
+def handle_start_deliver(id):
+    print("handle_start_deliver")
+    package_id = id
+    print(package_id)
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_fulfilment = 'delivering' WHERE o_orderKey = %s", (package_id))
+        cursor.execute("UPDATE orders SET o_fulfilment = 'delivering' WHERE o_orderKey = %s", (package_id,))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -539,7 +555,7 @@ def handle_delivered_package(msg_deliverd_package):
     package_id = msg_deliverd_package.package_id
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_fulfilment = 'delivered' WHERE o_orderKey = %s", (package_id))
+        cursor.execute("UPDATE orders SET o_fulfilment = 'delivered' WHERE o_orderKey = %s", (package_id,))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -547,6 +563,7 @@ def handle_delivered_package(msg_deliverd_package):
     finally:
         cursor.close()
 
+### feedback to amz of changing dest
 def handle_res_dest_changed(msg_res_dest_changed):
     package_id = msg_res_dest_changed.pacakge_id
     new_x = msg_res_dest_changed.new_dest_x
@@ -563,6 +580,7 @@ def handle_res_dest_changed(msg_res_dest_changed):
             cursor.close()
     
 def handle_dest_changed_from_ups(msg_dest_changed):
+    print("handle_dest_changed_from_ups")
     package_id = msg_dest_changed.package_id
     new_x = msg_dest_changed.new_dest_x
     new_y = msg_dest_changed.new_dest_y
@@ -579,23 +597,25 @@ def handle_dest_changed_from_ups(msg_dest_changed):
 def amzWithUPS():
     while True:
         response = receive_message(ups_socket,amz_ups.UACommands)
-        for msg_truck_arrive in response.truck_arrive:
-            threadOfTruckArrive = threading.Thread(target=handle_truck_arrive,args=(msg_truck_arrive,))
+        print(response)
+        if response.HasField("truck_arrive"):
+            threadOfTruckArrive = threading.Thread(target=handle_truck_arrive,args=(response.truck_arrive,))
             threadOfTruckArrive.start()
-        for msg_start_deliver in response.start_deliver:
-            threadOfStartDeliver = threading.Thread(target=handle_start_deliver, args=(msg_start_deliver,))
-            threadOfStartDeliver.start()
-        for msg_deliverd_package in response.package_delivered:
-            threadOfDeliverdPack = threading.Thread(target=handle_delivered_package, args=(msg_deliverd_package,))
+        if response.HasField("start_deliver"):
+            for id in response.start_deliver.package_id:
+                threadOfStartDeliver = threading.Thread(target=handle_start_deliver, args=(id,))
+                threadOfStartDeliver.start()
+        if response.HasField("package_delivered"):
+            threadOfDeliverdPack = threading.Thread(target=handle_delivered_package, args=(response.package_delivered,))
             threadOfDeliverdPack.start()
-        for msg_res_dest_changed in response.dest_response:
-            threadOfDestChanged = threading.Thread(target=handle_res_dest_changed, args=(msg_res_dest_changed,))
+        if response.HasField("dest_response"):
+            threadOfDestChanged = threading.Thread(target=handle_res_dest_changed, args=(response.dest_response,))
             threadOfDestChanged.start()
-        for msg_dest_changed in response.dest_notification:
-            threadOfDestChangedUPS = threading.Thread(target=handle_dest_changed_from_ups, args=(msg_dest_changed,))
+        if response.HasField("dest_notification"):
+            threadOfDestChangedUPS = threading.Thread(target=handle_dest_changed_from_ups, args=(response.dest_notification,))
             threadOfDestChangedUPS.start()
-        for msg_disconnect in response.disconnect:
-            if(msg_disconnect == True):
+        if response.HasField("disconnect"):
+            if(response.disconnect == True):
                 ups_socket.close()
 
 
@@ -605,17 +625,17 @@ def amzWithUPS():
 
 if __name__ == '__main__':
         # ### connect to UPS and get worldId
-    # ups = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # ups.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # ups.connect((UpsHost,UpsPort))
-    # ups_socket = ups
-    # #### amz send connected msg to ups
-    # msg_ups_connect = amz_ups.AUCommands()
-    # msg_ups_connect.connected = True
-    # send_message(ups,msg_ups_connect)
+    ups = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ups.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    ups.connect((UpsHost,UpsPort))
+    ups_socket = ups
+    #### amz send connected msg to ups
+    msg_ups_connect = amz_ups.AUCommands()
+    msg_ups_connect.connected = True
+    send_message(ups,msg_ups_connect)
 
-    # msg = receive_message(ups,amazon_pb.UACommands)
-    # worldId = msg.world_id
+    msg = receive_message(ups,amz_ups.UACommands)
+    worldId = msg.world_id
     ### connect to world
     amz = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     amz.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -625,13 +645,13 @@ if __name__ == '__main__':
     warehouses = initWarehouse()
     connect = amazon_pb.AConnect()
     connect.isAmazon = True
-    # connect.worldid = worldId
+    connect.worldid = worldId
     # Test connect world
-    connect.worldid = 1
+    # connect.worldid = 1
     
     # connect = amazon_pb.AConnect()
-    # for warehouse in warehouses:
-    #     connect.initwh.add(id=warehouse['id'], x=warehouse['x'], y=warehouse['y'])
+    for warehouse in warehouses:
+        connect.initwh.add(id=warehouse['id'], x=warehouse['x'], y=warehouse['y'])
     ### Test create a new world (new_world_id is None -- unconnected else connected)
     new_world_id = connect_world(amz, connect)
     if new_world_id:
@@ -640,7 +660,7 @@ if __name__ == '__main__':
         print("Failed to create a new world.")
 
     if new_world_id:
-        handlers = [worldWithAmz, amzWithWorld]
+        handlers = [worldWithAmz, amzWithWorld, amzWithUPS]
         threads = []
         for handler in handlers:
             thread = threading.Thread(target=handler)

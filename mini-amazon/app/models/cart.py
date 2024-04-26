@@ -35,6 +35,7 @@ class Cart:
             DELETE FROM carts
             WHERE c_uid=:uid 
             AND c_pid=:pid 
+            AND c_status=false
             ''', 
             uid = uid,
             pid = pid

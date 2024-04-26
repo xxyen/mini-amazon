@@ -19,7 +19,7 @@ class Product:
             SELECT p.p_pid, p.p_productname,p.p_category,p.p_stock, p.p_price, p.p_description, p.p_image, 
                                COALESCE(AVG(fp.fp_score),0) AS avgReviewRating, COUNT(fp.fp_pid) AS totalSale
             FROM products p
-            JOIN feedbackProduct fp ON p.p_pid = fp.fp_pid
+            LEFT JOIN feedbackProduct fp ON p.p_pid = fp.fp_pid
             GROUP BY p.p_pid 
             ORDER BY totalSale
             ''')

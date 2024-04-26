@@ -39,8 +39,9 @@ header {
 
 .item-image-main {
     order: 2;
-    width: 90%;
+    width: 80%;
     height: 100%;
+    margin-left: 40px;
 }
 
 /* sectioning completed */
@@ -59,7 +60,7 @@ header {
 
 .item-image-main img {
     width: 100%;
-    height: auto;
+    height: 1%;
 }
 
 .thumb-box:hover {
@@ -155,6 +156,17 @@ hr {
 .add-to-cart-btn:hover {
     background-color: #e6b800;
 }
+.item-image {
+    width: 50%;
+    height: auto;
+}
+
+@media (min-width: 768px) {
+    .item-image {
+        width: 200px; 
+    }
+}
+
 
 #quantity {
     border: 1px solid #aaa;
@@ -211,8 +223,9 @@ hr {
 
             </div>
             <div class="item-image-main">
-                <img src="{{product.image if product.image else 'https://m.media-amazon.com/images/I/81yGvW62D2L._AC_SY240_.jpg'}}" alt="default" />
+                <img src="{{ product.image if product.image else 'https://m.media-amazon.com/images/I/81yGvW62D2L._AC_SY240_.jpg'}}" alt="default" class="item-image" />
             </div>
+            
         </div>
 
         <div class="item-info-parent">

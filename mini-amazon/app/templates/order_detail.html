@@ -202,6 +202,8 @@
                                     Packing - Your order is being packed from {{orders[0].packingDate}}.
                                     {% elif orders[0].status == 'processing' %}
                                     Processing - Your order is being prepared from {{orders[0].processingDate}}.
+                                    {% elif orders[0].status == 'processed' %}
+                                    Processing - Your order is being processed from {{orders[0].processingDate}}.
                                     {% elif orders[0].status == 'packed' %}
                                     Packed - Your order is packed on {{orders[0].packedDate}}.
                                     {% elif orders[0].status == 'loading' %}
@@ -260,7 +262,7 @@
                                 {% endif %}
                 </ul>
                 <hr>
-                <a href="#" class="btn btn-warning" data-abc="true"> <i class="fa fa-chevron-left"></i> Back to
+                <a href="{{ url_for('orders.getUserOrders',user_id=current_user.id) }}" class="btn btn-warning" data-abc="true"> <i class="fa fa-chevron-left"></i> Back to
                     orders</a>
             </div>
         </article>

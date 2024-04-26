@@ -22,6 +22,10 @@ def submitOrder(user_id):
         carts = Cart.get(user_id)
         ### insert into lineItems
         Order.insert_to_lineItems(carts,oid)
+        ### delete all carts
+        for cart in carts:
+            pid = cart.c_pid
+            Cart.delete_item(user_id,pid)
     return redirect(url_for('orders.getUserOrders',user_id=current_user.id))
 
 @bp.route('/order/<int:user_id>/order_detail/<int:order_id>')
