@@ -9,7 +9,12 @@ import psycopg2
 import math
 
 WAIT_FOR_ACK = 30
+<<<<<<< HEAD
 WorldHost = "152.3.65.88"
+=======
+# WorldHost = "0.0.0.0"
+WorldHost = "vcm-38048.vm.duke.edu"
+>>>>>>> 1777466ae81bb7d384e0a163ee6e4c961dcf98de
 WorldPort = 23456
 UpsHost = "vcm-39063.vm.duke.edu"
 UpsPort = 1234
