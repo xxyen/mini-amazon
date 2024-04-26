@@ -1,0 +1,21 @@
+1. We dicussed the inital protocol with UPS, but we found there's something need to be modified, so we refined the protocol.
+
+2. The communication between the frontend and the backend is a little difficult. We discussed different plans and chose to use
+a shared database.
+
+3. It's difficult to test functions without data in the database. So we made a data generated script to generate data when
+starting the frontend.
+
+4. We used a loop to keep asking orders' status in the database. This caused some uncertain problems related to the concurrency.
+Finally, we figured it out and added the timer to make sure statements are executed in the correct order.
+
+5. When testing receiving messages from the world, we found the message couldn't be correctly parsed. So we changed the parsing 
+function, and it finally worked.
+
+6. The frontend display pages had some unsolved issues when tested. We managed to make it work correctly.
+
+7. When testing the communication with UPS, we encountered some bugs related to the message passing. We successfully solved the 
+problem after making some changes.
+
+8. We added the product feedback feature to the frontend, but they were not displayed as expected after the user added a new one.
+We managed to solve it after carefully debugging.
