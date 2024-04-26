@@ -9,7 +9,8 @@ import psycopg2
 import math
 
 WAIT_FOR_ACK = 30
-WorldHost = "0.0.0.0"
+# WorldHost = "0.0.0.0"
+WorldHost = "vcm-38048.vm.duke.edu"
 WorldPort = 23456
 UpsHost = ""
 UpsPort = ""
@@ -20,7 +21,7 @@ conn = psycopg2.connect(
     database='amazon',
     user='postgres',
     password='123456',
-    host='localhost',
+    host='db',
     port='5432'
 )
 ups_socket = 0
@@ -627,11 +628,11 @@ if __name__ == '__main__':
     connect.isAmazon = True
     # connect.worldid = worldId
     # Test connect world
-    connect.worldid = 1
+    # connect.worldid = 1
     
     # connect = amazon_pb.AConnect()
-    # for warehouse in warehouses:
-    #     connect.initwh.add(id=warehouse['id'], x=warehouse['x'], y=warehouse['y'])
+    for warehouse in warehouses:
+        connect.initwh.add(id=warehouse['id'], x=warehouse['x'], y=warehouse['y'])
     ### Test create a new world (new_world_id is None -- unconnected else connected)
     new_world_id = connect_world(amz, connect)
     if new_world_id:

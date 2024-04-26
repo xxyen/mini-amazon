@@ -13,7 +13,7 @@ SECRET_KEY='$SECRET'
 DB_NAME=amazon
 DB_USER=postgres
 DB_PORT=5432
-DB_HOST=localhost
+DB_HOST=db
 DB_PASSWORD=123456" > .flaskenv
 
 poetry config virtualenvs.in-project true
