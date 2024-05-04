@@ -194,26 +194,27 @@
                     <div class="bootstrap-iso">
                         <div class="card-body row">
                             <div class="bootstrap-iso">
-                                <div class="col-md-4"> <strong>Estimated Delivery time:</strong> <br>29 nov 2033 </div>
+                                <!-- <div class="col-md-4"> <strong>Estimated Delivery time:</strong> <br>29 nov 2033 </div> -->
+                                <div class="col-md-4"> <strong>Destination:</strong> <br>x: {{ orders[0].address_x }}, y: {{ orders[0].address_y }}</div>
                                 <div class="col-md-4"> <strong>Shipping BY:</strong> <br> BLUEDART, | <i
                                         class="fa fa-phone"></i> +19999999999 </div>
                                 <div class="col-md-4"> <strong>Status:</strong> <br> 
                                     {% if orders[0].status == 'packing' %}
-                                    Packing - Your order is being packed from {{orders[0].packingDate}}.
+                                    Packing - Your order is being packed.
                                     {% elif orders[0].status == 'processing' %}
                                     Processing - Your order is being prepared from {{orders[0].processingDate}}.
                                     {% elif orders[0].status == 'processed' %}
                                     Processing - Your order is being processed from {{orders[0].processingDate}}.
                                     {% elif orders[0].status == 'packed' %}
-                                    Packed - Your order is packed on {{orders[0].packedDate}}.
+                                    Packed - Your order is packed.
                                     {% elif orders[0].status == 'loading' %}
-                                    Loading - Your order is being loaded from {{orders[0].loadingDate}}.
+                                    Loading - Your order is being loaded.
                                     {% elif orders[0].status == 'loaded' %}
-                                    Loaded - Your order is loaded on {{orders[0].loadedDate}}.
+                                    Loaded - Your order is loaded.
                                     {% elif orders[0].status == 'delivering' %}
-                                    Delivering - Your order is being delivered from {{orders[0].deliveringDate}}.
+                                    Delivering - Your order is being delivered.
                                     {% elif orders[0].status == 'delivered' %}
-                                    Delivered - Your order has arrived on {{ orders[0].deliveredDate}}.
+                                    Delivered - Your order has arrived.
                                     {% else %}
                                     Unknown - Please contact support.
                                     {% endif %} </div>
@@ -231,12 +232,10 @@
                         class="{{ 'step active' if orders and orders[0].status == 'packed' or 
                             orders[0].status == 'delivered' or orders[0].status == 'loading' or 
                             orders[0].status == 'delivering' or orders[0].status == 'loaded' else 'step' }}">
-                        <span class="icon"> <i class="fa fa-truck"></i> </span> <span class="text"> On the way
-                            {{orders[0].packedDate}}</span>
+                        <span class="icon"> <i class="fa fa-truck"></i> </span> <span class="text"> On the way</span>
                     </div>
                     <div class="{{ 'step active' if orders and orders[0].status == 'delivered' else 'step' }}">
-                        <span class="icon"> <i class="fa fa-box"></i> </span> <span class="text">Ready for pickup
-                            {{orders[0].deliveredDate}}</span>
+                        <span class="icon"> <i class="fa fa-box"></i> </span> <span class="text">Ready for pickup</span>
                     </div>
                 </div>
                 <hr>

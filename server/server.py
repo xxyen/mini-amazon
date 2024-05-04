@@ -5,18 +5,16 @@ import amazon_ups_pb2 as amz_ups
 import socket
 from google.protobuf.internal.decoder import _DecodeVarint32
 from google.protobuf.internal.encoder import _EncodeVarint
+from google.protobuf.internal.encoder import _VarintEncoder
 import psycopg2
 import math
 
 WAIT_FOR_ACK = 30
-<<<<<<< HEAD
-WorldHost = "152.3.65.88"
-=======
-# WorldHost = "0.0.0.0"
+# WorldHost = "152.3.65.88"
 WorldHost = "vcm-38048.vm.duke.edu"
->>>>>>> 1777466ae81bb7d384e0a163ee6e4c961dcf98de
 WorldPort = 23456
-UpsHost = "vcm-39063.vm.duke.edu"
+# UpsHost = "vcm-38509.vm.duke.edu"
+UpsHost = "vcm-38048.vm.duke.edu"
 UpsPort = 1234
 worldSeqnums = []
 worldAcks = []
@@ -33,52 +31,39 @@ world_socket = 0
 seqnum = 0
 seqnumLock = threading.Lock()
 
-def send_message(sock, message):
-    """ Send a protobuf message to the server. """
-    data = message.SerializeToString()
-    _EncodeVarint(sock.sendall, len(data))
-    sock.sendall(data)
 
-# def receive_message(sock, message_type):
-#     """ Receive a protobuf message from the server. """
-#     var_int_buff = []
-#     while True:
-#         buf = sock.recv(1)
-#         var_int_buff += buf
-#         print(var_int_buff)
-#         length, pos = _DecodeVarint32(var_int_buff, 0)
-#         if pos != 0:
-#             break
-#     data = sock.recv(length)
-#     message = message_type()
-#     try:
-#         message.ParseFromString(data)
-#     except Exception as e:
-#         print("Failed to parse message:", str(e))
-#         print("Data received:", data)
-#         return None
-#     return message
+def send_message(socket, message):
+    print("start sending msg")
+    print(message)
+    print("finish sending msg")
+    string = message.SerializeToString()
+    data = []
+    _VarintEncoder()(data.append, len(string), None)
+    size = b''.join(data)
+    socket.sendall(size + string)
+
 def receive_message(sock, response_type):
     data = read_varint_delimited_stream(sock)
     response = response_type()
     response.ParseFromString(data)
+    print("start receiving msg")
+    print(response)
+    print("finish receiving msg")
     return response
     
 
 # read google buffer protocol response from a socket, return the raw data
 def read_varint_delimited_stream(sock):
-    print("socket in receive")
-    print(sock)
     size_variant = b''
     while True:
         size_variant += sock.recv(1)
         try:
             size = _DecodeVarint32(size_variant, 0)[0]
         except IndexError:
-            continue # if decode failed, read one more byte from stream
-        break # else if decode succeeded, break. Size is available
+            continue 
+        break
     
-    data = sock.recv(size) # data in string format
+    data = sock.recv(size) 
     return data
 
 def connect_world(sock, connect):
@@ -395,9 +380,10 @@ def amzWithWorld():
 
             ### buy
             purchase(warehouse_id,productIds,descriptions,numbers)
-            sql = f"UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = 1;"
-            print(sql)
-            cursor.execute(sql)
+            # sql = f"UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = 1;"
+            # print(sql)
+            # cursor.execute(sql)
+            cursor.execute("UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = %s", (order[0],)) 
             # conn.commit()
             # cursor.execute("UPDATE orders SET o_fulfilment = 'processed' WHERE o_orderKey = %s", (order[0],)) 
 
@@ -424,7 +410,8 @@ def toLoad(msg_truck_arrive):
     send_message(world_socket,msg_toload)
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE orders SET o_fulfilment = 'loading' WHERE o_orderKey = %s", (msg_truck_arrive.package_id,))
+        # cursor.execute("UPDATE orders SET o_fulfilment = 'loading' WHERE o_orderKey = %s", (msg_truck_arrive.package_id,))
+        cursor.execute("UPDATE orders SET o_fulfilment = 'loading' WHERE o_orderKey = %s AND o_fulfilment = 'packed'", (msg_truck_arrive.package_id,))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -482,10 +469,11 @@ def request_truck_to_ups(package_id):
         for row in rows:
             cursor.execute("SELECT p_productName, p_stock FROM products WHERE p_pid= %s", (row[0],))
             row_product = cursor.fetchone()
-            item = amz_ups.Item()
+            # item = amz_ups.Item()
+            item = request_truck.items.add()
             item.name = row_product[0]
             item.quantity = row_product[1]
-            request_truck.items.append(item)
+            # request_truck.items.append(item)
     
         conn.commit()
 

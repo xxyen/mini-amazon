@@ -50,6 +50,9 @@ def getUserOrders(user_id,page):
         user_orders = None
         return redirect(url_for('users.login'))
     
+    print("user orders!!!!!")
+    print(user_orders)
+    
     page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
     user_orders_paginated = user_orders[offset: offset + per_page if user_orders else None]
     pagination = Pagination(page=page, per_page=per_page, total=len(user_orders), css_framework='bootstrap4')

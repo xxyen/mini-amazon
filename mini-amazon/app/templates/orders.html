@@ -194,19 +194,19 @@
                                         <strong>
                                             {% if order.status == 'packing' %}
                                             Packing - Your order is being packed.
-                                            {% elif orders[0].status == 'processed' %}
+                                            {% elif order.status == 'processed' %}
                                             Processed - Your order is processed.
-                                            {% elif orders[0].status == 'processing' %}
+                                            {% elif order.status == 'processing' %}
                                             Processing - Your order is being prepared.
-                                            {% elif orders[0].status == 'packed' %}
+                                            {% elif order.status == 'packed' %}
                                             Packed - Your order is packed.
-                                            {% elif orders[0].status == 'loading' %}
+                                            {% elif order.status == 'loading' %}
                                             Loading - Your order is being loaded.
-                                            {% elif orders[0].status == 'loaded' %}
+                                            {% elif order.status == 'loaded' %}
                                             Loaded - Your order is loaded.
-                                            {% elif orders[0].status == 'delivering' %}
+                                            {% elif order.status == 'delivering' %}
                                             Delivering - Your order is being delivered.
-                                            {% elif orders[0].status == 'delivered' %}
+                                            {% elif order.status == 'delivered' %}
                                             Delivered - Your order has arrived.
                                             {% else %}
                                             Unknown - Please contact support.
